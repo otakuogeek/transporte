@@ -1,4 +1,3 @@
-// src/pages/Clientes.jsx
 import { useState, useEffect } from 'react';
 import api from '../api/client';
 import DataTable from '../components/DataTable';
@@ -82,7 +81,6 @@ export default function Clientes() {
     }
   }
 
-  // Helpers for multi-phone input
   function setTelefono(index, value) {
     const arr = [...form.telefonos];
     arr[index] = value;
@@ -98,88 +96,73 @@ export default function Clientes() {
     setForm({ ...form, telefonos: arr.length > 0 ? arr : [''] });
   }
 
-  const inputStyle = { width: '100%', padding: 8, border: '1px solid #ddd', borderRadius: 4, boxSizing: 'border-box', fontSize: 14 };
-  const labelStyle = { display: 'block', marginBottom: 4, fontSize: 13, fontWeight: 600, color: '#333' };
-
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Cargando...</div>;
+  if (loading) return <p className="p-4 text-muted">Cargando...</p>;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 22, color: '#1a1a2e' }}>👥 Clientes</h1>
-        <button onClick={handleNuevo}
-          style={{ background: '#e94560', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}>
-          + Nuevo Cliente
-        </button>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h1 className="h4 fw-semibold mb-0">Clientes</h1>
+        <button onClick={handleNuevo} className="btn btn-falc btn-sm fw-semibold">Nuevo Cliente</button>
       </div>
 
       {showForm && (
-        <div style={{ background: '#fff', borderRadius: 10, padding: 24, marginBottom: 20, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          <h3 style={{ margin: '0 0 20px', fontSize: 16, color: '#1a1a2e' }}>{editing ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
-          <form onSubmit={handleSubmit}>
-            {/* Fila 1: Nombre + Apellidos */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-              <div>
-                <label style={labelStyle}>Nombre *</label>
-                <input value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required
-                  placeholder="Ej: Carlos" style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Apellidos *</label>
-                <input value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value })} required
-                  placeholder="Ej: Ramírez Gómez" style={inputStyle} />
-              </div>
-            </div>
-
-            {/* Fila 2: WhatsApp multi */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Números WhatsApp *</label>
-              {form.telefonos.map((tel, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input value={tel} onChange={(e) => setTelefono(idx, e.target.value)}
-                    required={idx === 0} placeholder="Ej: 573001234567"
-                    style={{ ...inputStyle, flex: 1 }} />
-                  {form.telefonos.length > 1 && (
-                    <button type="button" onClick={() => removeTelefono(idx)}
-                      title="Quitar número"
-                      style={{ background: '#c62828', color: '#fff', border: 'none', borderRadius: 4, padding: '0 12px', cursor: 'pointer', fontSize: 16, flexShrink: 0 }}>
-                      ×
-                    </button>
-                  )}
+        <div className="card shadow-sm mb-3">
+          <div className="card-body">
+            <h6 className="fw-bold mb-3">{editing ? 'Editar Cliente' : 'Nuevo Cliente'}</h6>
+            <form onSubmit={handleSubmit}>
+              {/* Nombre + Apellidos */}
+              <div className="row g-3 mb-3">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold small">Nombre *</label>
+                  <input className="form-control" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                    required placeholder="Ej: Carlos" />
                 </div>
-              ))}
-              <button type="button" onClick={addTelefono}
-                style={{ background: 'none', border: '1px dashed #aaa', color: '#555', padding: '6px 14px', borderRadius: 4, cursor: 'pointer', fontSize: 13, marginTop: 2 }}>
-                + Agregar número
-              </button>
-            </div>
-
-            {/* Fila 3: Finca/Origen + Email */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-              <div>
-                <label style={labelStyle}>Finca / Origen</label>
-                <input value={form.origen_default} onChange={(e) => setForm({ ...form, origen_default: e.target.value })}
-                  placeholder="Ej: Finca La Aurora" style={inputStyle} />
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold small">Apellidos *</label>
+                  <input className="form-control" value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value })}
+                    required placeholder="Ej: Ramírez Gómez" />
+                </div>
               </div>
-              <div>
-                <label style={labelStyle}>Correo electrónico</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="Ej: cliente@correo.com" style={inputStyle} />
-              </div>
-            </div>
 
-            {/* Acciones */}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="submit"
-                style={{ background: '#4caf50', color: '#fff', border: 'none', padding: '9px 22px', borderRadius: 5, cursor: 'pointer', fontWeight: 600 }}>
-                Guardar
-              </button>
-              <button type="button" onClick={() => setShowForm(false)}
-                style={{ background: '#999', color: '#fff', border: 'none', padding: '9px 22px', borderRadius: 5, cursor: 'pointer' }}>
-                Cancelar
-              </button>
-            </div>
-          </form>
+              {/* WhatsApp multi */}
+              <div className="mb-3">
+                <label className="form-label fw-semibold small">Números WhatsApp *</label>
+                {form.telefonos.map((tel, idx) => (
+                  <div key={idx} className="d-flex gap-2 mb-2">
+                    <input className="form-control flex-grow-1" value={tel} onChange={(e) => setTelefono(idx, e.target.value)}
+                      required={idx === 0} placeholder="Ej: 573001234567" />
+                    {form.telefonos.length > 1 && (
+                      <button type="button" onClick={() => removeTelefono(idx)} className="btn btn-danger btn-sm px-2" title="Quitar número">×</button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={addTelefono}
+                  className="btn btn-outline-secondary btn-sm" style={{ borderStyle: 'dashed' }}>
+                  + Agregar número
+                </button>
+              </div>
+
+              {/* Finca + Email */}
+              <div className="row g-3 mb-3">
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold small">Finca / Origen</label>
+                  <input className="form-control" value={form.origen_default} onChange={(e) => setForm({ ...form, origen_default: e.target.value })}
+                    placeholder="Ej: Finca La Aurora" />
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold small">Correo electrónico</label>
+                  <input type="email" className="form-control" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    placeholder="Ej: cliente@correo.com" />
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="d-flex gap-2">
+                <button type="submit" className="btn btn-success btn-sm fw-semibold">Guardar</button>
+                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary btn-sm">Cancelar</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -188,36 +171,34 @@ export default function Clientes() {
           { key: 'id', label: '#' },
           {
             key: 'nombre', label: 'Nombre',
-            render: (v, row) => <span style={{ fontWeight: 500 }}>{v} {row.apellidos || ''}</span>,
+            render: (v, row) => <span className="fw-semibold">{v} {row.apellidos || ''}</span>,
           },
           {
             key: 'telefonos', label: 'WhatsApp',
             render: (v, row) => {
               const nums = Array.isArray(v) && v.length > 0 ? v : (row.telefono_whatsapp ? [row.telefono_whatsapp] : []);
-              if (nums.length === 0) return <span style={{ color: '#999' }}>—</span>;
+              if (nums.length === 0) return <span className="text-muted">—</span>;
               return (
                 <span>
                   {nums[0]}
                   {nums.length > 1 && (
-                    <span style={{ marginLeft: 6, background: '#e94560', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 600 }}>
-                      +{nums.length - 1}
-                    </span>
+                    <span className="badge bg-danger ms-1" style={{ fontSize: 11 }}>+{nums.length - 1}</span>
                   )}
                 </span>
               );
             },
           },
-          { key: 'origen_default', label: 'Finca/Origen', render: (v) => v || <span style={{ color: '#999' }}>—</span> },
-          { key: 'email', label: 'Email', render: (v) => v || <span style={{ color: '#999' }}>—</span> },
+          { key: 'origen_default', label: 'Finca/Origen', render: (v) => v || <span className="text-muted">—</span> },
+          { key: 'email', label: 'Email', render: (v) => v || <span className="text-muted">—</span> },
           { key: 'total_solicitudes', label: 'Solicitudes' },
           { key: 'fecha_registro', label: 'Registro', render: (v) => new Date(v).toLocaleDateString('es-PE') },
           {
             key: 'acciones', label: 'Acciones', render: (_, row) => (
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className="d-flex gap-1">
                 <button onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
-                  style={{ background: '#1565c0', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>Editar</button>
+                  className="btn btn-primary btn-sm" style={{ fontSize: 12 }}>Editar</button>
                 <button onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}
-                  style={{ background: '#c62828', color: '#fff', border: 'none', padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>Eliminar</button>
+                  className="btn btn-danger btn-sm" style={{ fontSize: 12 }}>Eliminar</button>
               </div>
             ),
           },

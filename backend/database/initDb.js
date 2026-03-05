@@ -8,11 +8,17 @@ async function initializeDatabase() {
     const schemaPath = path.join(__dirname, 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
+    // Remover comentarios de línea (-- ...) antes de dividir
+    const cleanedSchema = schema
+      .split('\n')
+      .map(line => line.replace(/--.*$/, ''))
+      .join('\n');
+
     // Dividir por sentencias (separadas por ;) y ejecutar una a una
-    const statements = schema
+    const statements = cleanedSchema
       .split(';')
       .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .filter(s => s.length > 0);
 
     for (const statement of statements) {
       await pool.query(statement);

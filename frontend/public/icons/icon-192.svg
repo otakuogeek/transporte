@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1a1a2e"/>
+  <text x="96" y="115" text-anchor="middle" font-size="90" font-family="system-ui,sans-serif">🚛</text>
+  <text x="96" y="155" text-anchor="middle" font-size="22" font-weight="bold" font-family="system-ui,sans-serif" fill="#e94560" letter-spacing="3">FALC</text>
+</svg>

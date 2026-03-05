@@ -2,9 +2,18 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 
 // Cargar variables de entorno
 dotenv.config();
+
+// ===== PREVENIR CRASHES POR EXCEPCIONES NO CAPTURADAS (ej: Baileys) =====
+process.on('uncaughtException', (err) => {
+  console.error('⚠ Excepción no capturada (el servidor continúa):', err.message);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠ Promesa rechazada no capturada (el servidor continúa):', reason?.message || reason);
+});
 
 // Importar módulos propios
 const pool = require('./database/connection');
@@ -14,6 +23,25 @@ const apiRoutes = require('./routes/api');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+app.set('trust proxy', 1);
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.API_RATE_LIMIT_MAX || 600),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/health',
+  message: { error: 'Demasiadas solicitudes. Intenta de nuevo en unos minutos.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX || 30),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos de autenticación. Intenta nuevamente más tarde.' },
+});
 
 // ===== MIDDLEWARE =====
 app.use(cors({
@@ -76,6 +104,8 @@ app.get('/api', (req, res) => {
 app.use('/webhook', webhookRoutes);
 
 // API REST del panel de administración
+app.use('/api/auth', authLimiter);
+app.use('/api', apiLimiter);
 app.use('/api', apiRoutes);
 
 // ===== SERVIR FRONTEND (SPA fallback) =====

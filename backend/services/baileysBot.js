@@ -18,18 +18,22 @@ const conversaciones = {};
 // Teléfonos con agente pausado (el operador gestiona manualmente)
 const agentePausado = new Set();
 
-function pausarAgente(telefono) {
-    agentePausado.add(telefono);
-    console.log(`⏸️ Agente PAUSADO para ${telefono}`);
+function convKey(telefono, sessionId = 'default') {
+    return `${sessionId}:${telefono}`;
 }
 
-function reanudarAgente(telefono) {
-    agentePausado.delete(telefono);
-    console.log(`▶️ Agente REANUDADO para ${telefono}`);
+function pausarAgente(telefono, sessionId = 'default') {
+    agentePausado.add(convKey(telefono, sessionId));
+    console.log(`⏸️ Agente PAUSADO para ${telefono} [${sessionId}]`);
 }
 
-function esAgentePausado(telefono) {
-    return agentePausado.has(telefono);
+function reanudarAgente(telefono, sessionId = 'default') {
+    agentePausado.delete(convKey(telefono, sessionId));
+    console.log(`▶️ Agente REANUDADO para ${telefono} [${sessionId}]`);
+}
+
+function esAgentePausado(telefono, sessionId = 'default') {
+    return agentePausado.has(convKey(telefono, sessionId));
 }
 
 // Obtener destino único desde configuración
@@ -629,8 +633,11 @@ async function menuTransporte(jid, texto, conv, enviar) {
         conv.data.asignacionAceptada = ai.id;
         conv.data.vehiculosTotal = ai.cantidad_camiones;
         conv.data.vehiculosRegistrados = ai.vehiculos_registrados;
-        conv.data.placaCamion = null;
         conv.data.conductorNombre = null;
+        conv.data.cuilConductor = null;
+        conv.data.placaCamion = null;
+        conv.data.patente2 = null;
+        conv.data.tipoCamion = null;
 
         const faltantes = ai.cantidad_camiones - ai.vehiculos_registrados;
         const numActual = ai.vehiculos_registrados + 1;
@@ -640,7 +647,7 @@ async function menuTransporte(jid, texto, conv, enviar) {
                 `¡Hola, *${conv.data.transporteNombre}*! 🚛\n\n` +
                 `Veo que tienes un pedido aceptado con *${faltantes}* camión(es) pendiente(s) de registrar datos.\n\n` +
                 `*Camión ${numActual} de ${ai.cantidad_camiones}:*\n` +
-                `Envíame la *placa* del camión:`
+                `Envíame el *nombre y apellido* del chofer:`
             );
         } else {
             const msgCamiones = ai.cantidad_camiones > 1
@@ -650,7 +657,7 @@ async function menuTransporte(jid, texto, conv, enviar) {
                 `¡Hola, *${conv.data.transporteNombre}*! 🚛\n\n` +
                 `Tienes un pedido aceptado pendiente de registrar datos.\n\n` +
                 msgCamiones +
-                `Envíame la *placa* del camión:`
+                `Envíame el *nombre y apellido* del chofer:`
             );
         }
         return;
@@ -795,8 +802,11 @@ async function procesarRespuestaTransporte(jid, texto, conv, enviar) {
     conv.data.asignacionAceptada = asigId;
     conv.data.vehiculosTotal = cantidadAceptada;
     conv.data.vehiculosRegistrados = 0;
-    conv.data.placaCamion = null;
     conv.data.conductorNombre = null;
+    conv.data.cuilConductor = null;
+    conv.data.placaCamion = null;
+    conv.data.patente2 = null;
+    conv.data.tipoCamion = null;
 
     const msgParcial = esParcial
         ? `Aceptaste *${cantidadAceptada}* de ${cantidadOriginal} camiones (${cantidadOriginal - cantidadAceptada} liberados) 📋\n\n`
@@ -810,7 +820,7 @@ async function procesarRespuestaTransporte(jid, texto, conv, enviar) {
         `¡Genial, pedido aceptado! ✅\n\n` +
         msgParcial +
         msgCamiones +
-        `Envíame la *placa* del camión:`
+        `Envíame el *nombre y apellido* del chofer:`
     );
 }
 
@@ -823,42 +833,77 @@ async function procesarDatosCamionTransporte(jid, texto, conv, enviar) {
         const [asigRows] = await pool.query('SELECT cantidad_camiones FROM asignaciones WHERE id = ?', [asigId]);
         conv.data.vehiculosTotal = asigRows[0].cantidad_camiones || 1;
         conv.data.vehiculosRegistrados = 0;
-        conv.data.placaCamion = null;
         conv.data.conductorNombre = null;
+        conv.data.cuilConductor = null;
+        conv.data.placaCamion = null;
+        conv.data.patente2 = null;
+        conv.data.tipoCamion = null;
     }
 
     const total = conv.data.vehiculosTotal;
     const registrados = conv.data.vehiculosRegistrados;
     const numActual = registrados + 1;
+    const textoLower = texto.trim().toLowerCase();
 
-    if (!conv.data.placaCamion) {
-        conv.data.placaCamion = texto.trim().toUpperCase();
-        await enviar(jid, `Placa: *${conv.data.placaCamion}* ✅\n\n¿Nombre del *conductor* del camión ${numActual}?`);
+    // Paso 1: Nombre y apellido del chofer
+    if (conv.data.conductorNombre == null) {
+        conv.data.conductorNombre = texto.trim();
+        await enviar(jid, `👤 Chofer: *${conv.data.conductorNombre}* ✅\n\nAhora el *CUIL* del chofer (ej: 20-12345678-9):\n_(Escribe *no* si no tenés el dato)_`);
         return;
     }
 
-    if (!conv.data.conductorNombre) {
-        conv.data.conductorNombre = texto.trim();
+    // Paso 2: CUIL del chofer
+    if (conv.data.cuilConductor == null) {
+        conv.data.cuilConductor = (textoLower === 'no' || textoLower === 'n' || textoLower === '-') ? '-' : texto.trim();
+        await enviar(jid, `CUIL: *${conv.data.cuilConductor}* ✅\n\nEnvíame la *Patente 1* del camión (tractor/unidad):`);
+        return;
+    }
+
+    // Paso 3: Patente 1
+    if (conv.data.placaCamion == null) {
+        conv.data.placaCamion = texto.trim().toUpperCase();
+        await enviar(jid, `Patente 1: *${conv.data.placaCamion}* ✅\n\n¿Tiene acoplado? Envíame la *Patente 2*:\n_(Escribe *no* si no tiene)_`);
+        return;
+    }
+
+    // Paso 4: Patente 2 (opcional)
+    if (conv.data.patente2 == null) {
+        conv.data.patente2 = (textoLower === 'no' || textoLower === 'n' || textoLower === '-') ? '' : texto.trim().toUpperCase();
+        const p2msg = conv.data.patente2 ? `Patente 2: *${conv.data.patente2}* ✅` : 'Sin acoplado ✅';
+        await enviar(jid, `${p2msg}\n\n¿Cuál es el *tipo de camión*?\n_(Ej: Semirremolque, Volcador, Chasis, Plataforma, Cisterna, etc.)_`);
+        return;
+    }
+
+    // Paso 5: Tipo de camión → guardar en DB
+    if (conv.data.tipoCamion == null) {
+        conv.data.tipoCamion = texto.trim();
 
         // Guardar en vehiculos_asignados
         await pool.query(
-            'INSERT INTO vehiculos_asignados (asignacion_id, placa, conductor_nombre) VALUES (?, ?, ?)',
-            [asigId, conv.data.placaCamion, conv.data.conductorNombre]
+            'INSERT INTO vehiculos_asignados (asignacion_id, placa, patente2, tipo_camion, conductor_nombre, cuil_conductor) VALUES (?, ?, ?, ?, ?, ?)',
+            [asigId, conv.data.placaCamion, conv.data.patente2 || null, conv.data.tipoCamion, conv.data.conductorNombre, conv.data.cuilConductor !== '-' ? conv.data.cuilConductor : null]
         );
 
         conv.data.vehiculosRegistrados = numActual;
 
         if (numActual < total) {
             // Faltan más vehículos
+            const p2line = conv.data.patente2 ? `🔗 Patente 2: *${conv.data.patente2}*\n` : '';
             await enviar(jid,
                 `✅ Camión ${numActual}/${total} registrado:\n` +
-                `🚛 Placa: *${conv.data.placaCamion}*\n` +
-                `👤 Conductor: *${conv.data.conductorNombre}*\n\n` +
+                `👤 Chofer: *${conv.data.conductorNombre}*\n` +
+                `🪪 CUIL: *${conv.data.cuilConductor}*\n` +
+                `🚛 Patente 1: *${conv.data.placaCamion}*\n` +
+                p2line +
+                `🔧 Tipo: *${conv.data.tipoCamion}*\n\n` +
                 `Ahora el camión *${numActual + 1} de ${total}* 🚛\n\n` +
-                `Envíame la *placa*:`
+                `Envíame el *nombre y apellido* del chofer:`
             );
-            conv.data.placaCamion = null;
             conv.data.conductorNombre = null;
+            conv.data.cuilConductor = null;
+            conv.data.placaCamion = null;
+            conv.data.patente2 = null;
+            conv.data.tipoCamion = null;
             return;
         }
 
@@ -871,6 +916,12 @@ async function procesarDatosCamionTransporte(jid, texto, conv, enviar) {
             'UPDATE asignaciones SET placa_camion = ?, conductor_nombre = ? WHERE id = ?',
             [conv.data.placaCamion, conv.data.conductorNombre, asigId]
         );
+
+        conv.data.conductorNombre = null;
+        conv.data.cuilConductor = null;
+        conv.data.placaCamion = null;
+        conv.data.patente2 = null;
+        conv.data.tipoCamion = null;
 
         const [confirmados] = await pool.query(
             "SELECT COALESCE(SUM(cantidad_camiones), 0) as total FROM asignaciones WHERE ticket_id = ? AND estado = 'Aceptado'",
@@ -921,7 +972,86 @@ async function procesarCantidadCamiones(jid, texto, conv, enviar) {
     }
 
     conv.data.cantidadCamiones = cantidad;
+
+    // Cargar tipos de vehículos disponibles desde la BD
+    try {
+        const [tipos] = await pool.query('SELECT id, nombre FROM tipos_vehiculos ORDER BY nombre ASC');
+        if (tipos.length > 0) {
+            conv.data.tiposVehiculos = tipos;
+            conv.step = 'pedir_tipo_vehiculo';
+            const lista = tipos.map((t, i) => `*${i + 1}.* ${t.nombre}`).join('\n');
+            await enviar(jid,
+                `🚛 *${cantidad}* camión(es). ¡Casi listo!\n\n` +
+                `¿Qué tipo de camión necesitas? 🔧\n\n` +
+                lista +
+                `\n\n_Escribe el número o el nombre. Escribe *0* si no importa el tipo._`
+            );
+        } else {
+            // Sin tipos configurados → ir directo a confirmación
+            conv.data.tiposVehiculos = [];
+            conv.data.tipoVehiculoId = null;
+            conv.data.tipoVehiculoNombre = null;
+            conv.step = 'confirmar_solicitud';
+            await enviar(jid,
+                `¡Listo! Mira cómo quedó tu pedido 📋\n\n` +
+                `👤 *${conv.data.clienteNombre}*\n` +
+                `📍 De: *${conv.data.origen}*\n` +
+                `📍 A: *${conv.data.destino || '(por definir)'}*\n` +
+                `📅 Fecha: *${conv.data.fecha}*\n` +
+                `🚛 Camiones: *${cantidad}*\n\n` +
+                `¿Todo bien? Escríbeme *sí* para enviarlo o *no* si quieres corregir algo 😊`
+            );
+        }
+    } catch (err) {
+        console.error('Error cargando tipos de vehículos:', err.message);
+        // Fallback sin tipos
+        conv.data.tipoVehiculoId = null;
+        conv.data.tipoVehiculoNombre = null;
+        conv.step = 'confirmar_solicitud';
+        await enviar(jid,
+            `Camiones: *${cantidad}* ✅\n\n¿Todo bien? Escríbeme *sí* para enviar el pedido 😊`
+        );
+    }
+}
+
+// ===== PEDIR TIPO DE VEHÍCULO =====
+async function procesarTipoVehiculo(jid, texto, conv, enviar) {
+    const entrada = texto.trim();
+    const tipos = conv.data.tiposVehiculos || [];
+    const saltar = entrada === '0' || ['no', 'n', 'omitir', 'saltar', 'ninguno', 'skip', 'cualquiera'].includes(entrada.toLowerCase());
+
+    if (saltar) {
+        conv.data.tipoVehiculoId = null;
+        conv.data.tipoVehiculoNombre = null;
+    } else {
+        const num = parseInt(entrada);
+        if (!isNaN(num) && num >= 1 && num <= tipos.length) {
+            const sel = tipos[num - 1];
+            conv.data.tipoVehiculoId = sel.id;
+            conv.data.tipoVehiculoNombre = sel.nombre;
+        } else {
+            // Intentar coincidencia por nombre
+            const norm = entrada.toLowerCase();
+            const coincide = tipos.find(t => t.nombre.toLowerCase().includes(norm));
+            if (coincide) {
+                conv.data.tipoVehiculoId = coincide.id;
+                conv.data.tipoVehiculoNombre = coincide.nombre;
+            } else {
+                const lista = tipos.map((t, i) => `*${i + 1}.* ${t.nombre}`).join('\n');
+                await enviar(jid,
+                    `No entendí esa opción 😅\n\n` +
+                    `Escríbeme el *número* del tipo:\n${lista}\n\n` +
+                    `O escribe *0* si no importa el tipo`
+                );
+                return;
+            }
+        }
+    }
+
     conv.step = 'confirmar_solicitud';
+    const tipoLinea = conv.data.tipoVehiculoNombre
+        ? `🚛 Tipo vehículo: *${conv.data.tipoVehiculoNombre}*\n`
+        : `🚛 Tipo vehículo: _cualquiera_\n`;
 
     await enviar(jid,
         `¡Listo! Mira cómo quedó tu pedido 📋\n\n` +
@@ -929,8 +1059,9 @@ async function procesarCantidadCamiones(jid, texto, conv, enviar) {
         `📍 De: *${conv.data.origen}*\n` +
         `📍 A: *${conv.data.destino || '(por definir)'}*\n` +
         `📅 Fecha: *${conv.data.fecha}*\n` +
-        `🚛 Camiones: *${cantidad}*\n\n` +
-        `¿Todo bien? Escríbeme *sí* para enviarlo o *no* si quieres corregir algo 😊`
+        `🔢 Camiones: *${conv.data.cantidadCamiones}*\n` +
+        tipoLinea +
+        `\n¿Todo bien? Escríbeme *sí* para enviarlo o *no* para corregir algo 😊`
     );
 }
 
@@ -965,20 +1096,22 @@ async function procesarConfirmacion(jid, texto, conv, enviar) {
             const fechaDB = fechaParaDB(conv.data.fecha);
             const fechaRequerida = fechaDB + ' 08:00:00'; // hora por defecto
             const [result] = await pool.query(
-                `INSERT INTO tickets (cliente_id, origen, destino, cantidad_camiones, fecha_requerida, observaciones, estado)
-                 VALUES (?, ?, ?, ?, ?, ?, 'Pendiente de asignación')`,
-                [conv.data.clienteId, conv.data.origen, conv.data.destino || null, conv.data.cantidadCamiones || 1, fechaRequerida, null]
+                `INSERT INTO tickets (cliente_id, origen, destino, cantidad_camiones, tipo_vehiculo_id, fecha_requerida, observaciones, estado)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'Pendiente de asignación')`,
+                [conv.data.clienteId, conv.data.origen, conv.data.destino || null, conv.data.cantidadCamiones || 1, conv.data.tipoVehiculoId || null, fechaRequerida, null]
             );
 
             const ticketId = result.insertId;
+            const tipoLineaConf = conv.data.tipoVehiculoNombre ? `🚛 Vehículo: *${conv.data.tipoVehiculoNombre}*\n` : '';
 
             await enviar(jid,
                 `¡Hecho! Tu pedido *Ticket #${ticketId}* ya quedó registrado 🎉\n\n` +
                 `📍 Origen: *${conv.data.origen}*\n` +
                 (conv.data.destino ? `📍 Destino: *${conv.data.destino}*\n` : '') +
                 `📅 Fecha: *${conv.data.fecha}*\n` +
-                `🚛 Camiones: *${conv.data.cantidadCamiones || 1}*\n\n` +
-                `Nuestro equipo ya está buscando transportes para ti 💪\n` +
+                `🔢 Camiones: *${conv.data.cantidadCamiones || 1}*\n` +
+                tipoLineaConf +
+                `\nNuestro equipo ya está buscando transportes para ti 💪\n` +
                 `Te avisamos apenas tengamos novedades, ¡quédate tranqui! 😊`
             );
 
@@ -1379,14 +1512,14 @@ function fechaParaDB(fechaStr) {
     return fechaStr; // fallback
 }
 
-async function registrarMensaje(telefono, contenido, direccion, contexto = null, solicitudId = null) {
+async function registrarMensaje(telefono, contenido, direccion, contexto = null, solicitudId = null, sessionId = 'default') {
     try {
         // Asegurar que la dirección sea válida para el ENUM
         const dir = (direccion === 'entrante' || direccion === 'saliente') ? direccion : 'saliente';
         await pool.query(
-            `INSERT INTO mensajes_log (telefono, direccion, contenido, tipo_mensaje, contexto, solicitud_id)
-       VALUES (?, ?, ?, 'text', ?, ?)`,
-            [telefono, dir, contenido, contexto, solicitudId]
+              `INSERT INTO mensajes_log (session_id, telefono, direccion, contenido, tipo_mensaje, contexto, solicitud_id)
+          VALUES (?, ?, ?, ?, 'text', ?, ?)`,
+              [sessionId, telefono, dir, contenido, contexto, solicitudId]
         );
     } catch (err) {
         console.error('Error registrando mensaje:', err.message);
@@ -1400,16 +1533,18 @@ async function registrarMensaje(telefono, contenido, direccion, contexto = null,
  * @param {string} remoteJid - JID original del remitente (puede ser @s.whatsapp.net o @lid)
  * @param {Function} enviar - Función (jid, text) => Promise
  */
-async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar) {
+async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar, sessionId = 'default') {
     const textoLimpio = texto.trim();
     // Usar el remoteJid original para responder (soporta @lid y @s.whatsapp.net)
     const jid = remoteJid;
 
     // Obtener o crear estado
-    if (!conversaciones[telefono]) {
-        conversaciones[telefono] = { step: 'saludo', data: {}, lastActivity: Date.now() };
+    const key = convKey(telefono, sessionId);
+
+    if (!conversaciones[key]) {
+        conversaciones[key] = { step: 'saludo', data: {}, lastActivity: Date.now() };
     }
-    const conv = conversaciones[telefono];
+    const conv = conversaciones[key];
     conv.lastActivity = Date.now();
     // Siempre mantener el teléfono real disponible
     conv.data.telefonoRegistro = telefono;
@@ -1436,8 +1571,8 @@ async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar) {
         || lower === 'reiniciar' || lower === 'menu' || lower === 'menú'
         || lower === 'inicio' || lower === 'iniciar' || lower === 'empezar';
     if (esSaludo) {
-        conversaciones[telefono] = { step: 'saludo', data: {}, lastActivity: Date.now() };
-        const convReset = conversaciones[telefono];
+        conversaciones[key] = { step: 'saludo', data: {}, lastActivity: Date.now() };
+        const convReset = conversaciones[key];
         // Identificar usuario ANTES de saludar
         await identificarUsuario(telefono, convReset);
         await saludar(jid, convReset, enviar);
@@ -1482,6 +1617,9 @@ async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar) {
             case 'pedir_cantidad_camiones':
                 await procesarCantidadCamiones(jid, textoLimpio, conv, enviar);
                 break;
+            case 'pedir_tipo_vehiculo':
+                await procesarTipoVehiculo(jid, textoLimpio, conv, enviar);
+                break;
             case 'pedir_vehiculo':
                 await procesarCantidadCamiones(jid, textoLimpio, conv, enviar); // redirect legacy
                 break;
@@ -1513,8 +1651,8 @@ async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar) {
                 await procesarConfirmacionViaje(jid, textoLimpio, conv, enviar);
                 break;
             default:
-                conversaciones[telefono] = { step: 'saludo', data: {}, lastActivity: Date.now() };
-                await saludar(jid, conversaciones[telefono], enviar);
+                conversaciones[key] = { step: 'saludo', data: {}, lastActivity: Date.now() };
+                await saludar(jid, conversaciones[key], enviar);
         }
     } catch (error) {
         console.error('✗ Error en bot Baileys:', error.message);
@@ -1526,15 +1664,16 @@ async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar) {
  * Permite que otros servicios (cotizacionService) cambien el estado de conversación
  * de un usuario, por ejemplo para ponerlo en 'confirmar_viaje' al recibir una cotización.
  */
-function setConversacionStep(telefono, step, extraData = {}) {
-    if (!conversaciones[telefono]) {
-        conversaciones[telefono] = { step, data: { ...extraData }, lastActivity: Date.now() };
+function setConversacionStep(telefono, step, extraData = {}, sessionId = 'default') {
+    const key = convKey(telefono, sessionId);
+    if (!conversaciones[key]) {
+        conversaciones[key] = { step, data: { ...extraData }, lastActivity: Date.now() };
     } else {
-        conversaciones[telefono].step = step;
-        Object.assign(conversaciones[telefono].data, extraData);
-        conversaciones[telefono].lastActivity = Date.now();
+        conversaciones[key].step = step;
+        Object.assign(conversaciones[key].data, extraData);
+        conversaciones[key].lastActivity = Date.now();
     }
-    console.log(`📝 Conversación de ${telefono} actualizada a step='${step}'`);
+    console.log(`📝 Conversación de ${telefono} [${sessionId}] actualizada a step='${step}'`);
 }
 
 module.exports = {

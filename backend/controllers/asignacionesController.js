@@ -4,7 +4,7 @@ const pool = require('../database/connection');
 exports.asignar = async (req, res) => {
     try {
         const { ticket_id, asignaciones } = req.body;
-        // asignaciones = [{ transporte_id, cantidad_camiones }]
+        // asignaciones = [{ transporte_id, cantidad_camiones, precio, comision, comision_porcentaje }]
         const operador_id = req.admin?.id || null;
 
         if (!ticket_id || !asignaciones || asignaciones.length === 0) {
@@ -31,8 +31,8 @@ exports.asignar = async (req, res) => {
         const resultados = [];
         for (const a of asignaciones) {
             const [result] = await pool.query(
-                'INSERT INTO asignaciones (ticket_id, transporte_id, cantidad_camiones, operador_asignador_id) VALUES (?, ?, ?, ?)',
-                [ticket_id, a.transporte_id, a.cantidad_camiones || 1, operador_id]
+                'INSERT INTO asignaciones (ticket_id, transporte_id, cantidad_camiones, precio, comision, comision_porcentaje, operador_asignador_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [ticket_id, a.transporte_id, a.cantidad_camiones || 1, a.precio || null, a.comision || null, a.comision_porcentaje || null, operador_id]
             );
             resultados.push(result.insertId);
 
@@ -47,6 +47,7 @@ exports.asignar = async (req, res) => {
                     const baileysService = require('../services/baileysService');
                     const fecha = new Date(tk[0].fecha_requerida).toLocaleDateString('es-CO');
                     const cantMsg = a.cantidad_camiones;
+                    const precioMsg = a.precio ? `\n💲 Precio acordado: *$${parseFloat(a.precio).toLocaleString('es-AR')}*` : '';
                     let msgAceptar;
                     if (cantMsg > 1) {
                         msgAceptar = `¿Cuántos camiones aceptas?\n` +
@@ -62,7 +63,9 @@ exports.asignar = async (req, res) => {
                         `📍 Destino: *${tk[0].destino || '—'}*\n` +
                         `📅 Fecha: *${fecha}*\n` +
                         `🚛 Camiones solicitados: *${cantMsg}*\n` +
-                        `👤 Cliente: *${tk[0].cliente_nombre}*\n\n` +
+                        `👤 Cliente: *${tk[0].cliente_nombre}*` +
+                        precioMsg +
+                        `\n\n` +
                         msgAceptar
                     );
                 }

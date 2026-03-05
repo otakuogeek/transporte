@@ -49,10 +49,10 @@ exports.getById = async (req, res) => {
 // Crear un nuevo transporte
 exports.create = async (req, res) => {
     try {
-        const { nombre, contacto_nombre, telefono_whatsapp, email, cantidad_vehiculos } = req.body;
+        const { nombre, contacto_nombre, telefono_whatsapp, email, cantidad_vehiculos, cbu, alias_cbu, banco, titular_cuenta, cuit_cuil } = req.body;
         const [result] = await pool.query(
-            'INSERT INTO transportes (nombre, contacto_nombre, telefono_whatsapp, email, cantidad_vehiculos) VALUES (?, ?, ?, ?, ?)',
-            [nombre, contacto_nombre || null, telefono_whatsapp || null, email || null, cantidad_vehiculos || 0]
+            'INSERT INTO transportes (nombre, contacto_nombre, telefono_whatsapp, email, cantidad_vehiculos, cbu, alias_cbu, banco, titular_cuenta, cuit_cuil) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [nombre, contacto_nombre || null, telefono_whatsapp || null, email || null, cantidad_vehiculos || 0, cbu || null, alias_cbu || null, banco || null, titular_cuenta || null, cuit_cuil || null]
         );
         res.status(201).json({ id: result.insertId, message: 'Transporte creado exitosamente' });
     } catch (error) {
@@ -67,10 +67,10 @@ exports.create = async (req, res) => {
 // Actualizar un transporte
 exports.update = async (req, res) => {
     try {
-        const { nombre, contacto_nombre, telefono_whatsapp, email, estado, cantidad_vehiculos } = req.body;
+        const { nombre, contacto_nombre, telefono_whatsapp, email, estado, cantidad_vehiculos, cbu, alias_cbu, banco, titular_cuenta, cuit_cuil } = req.body;
         await pool.query(
-            'UPDATE transportes SET nombre = ?, contacto_nombre = ?, telefono_whatsapp = ?, email = ?, estado = ?, cantidad_vehiculos = ? WHERE id = ?',
-            [nombre, contacto_nombre, telefono_whatsapp, email, estado || 'Activo', cantidad_vehiculos || 0, req.params.id]
+            'UPDATE transportes SET nombre = ?, contacto_nombre = ?, telefono_whatsapp = ?, email = ?, estado = ?, cantidad_vehiculos = ?, cbu = ?, alias_cbu = ?, banco = ?, titular_cuenta = ?, cuit_cuil = ? WHERE id = ?',
+            [nombre, contacto_nombre, telefono_whatsapp, email, estado || 'Activo', cantidad_vehiculos || 0, cbu || null, alias_cbu || null, banco || null, titular_cuenta || null, cuit_cuil || null, req.params.id]
         );
         res.json({ message: 'Transporte actualizado' });
     } catch (error) {

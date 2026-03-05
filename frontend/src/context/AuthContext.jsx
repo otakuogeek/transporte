@@ -12,7 +12,13 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('falc_token');
     const savedAdmin = localStorage.getItem('falc_admin');
     if (token && savedAdmin) {
-      setAdmin(JSON.parse(savedAdmin));
+      try {
+        setAdmin(JSON.parse(savedAdmin));
+      } catch (error) {
+        console.error('Sesión local inválida, limpiando storage:', error);
+        localStorage.removeItem('falc_token');
+        localStorage.removeItem('falc_admin');
+      }
     }
     setLoading(false);
   }, []);
@@ -32,8 +38,14 @@ export function AuthProvider({ children }) {
     setAdmin(null);
   }
 
+  // Verifica si el usuario actual tiene acceso a una sección
+  function tienePermiso(seccion) {
+    if (!admin?.permisos) return true; // backwards compat: si no hay permisos, permitir todo
+    return admin.permisos.includes(seccion);
+  }
+
   return (
-    <AuthContext.Provider value={{ admin, login, logout, loading }}>
+    <AuthContext.Provider value={{ admin, login, logout, loading, tienePermiso }}>
       {children}
     </AuthContext.Provider>
   );

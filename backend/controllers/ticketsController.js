@@ -6,10 +6,12 @@ exports.getAll = async (req, res) => {
         const { estado, cliente_id, fecha_desde, fecha_hasta } = req.query;
         let query = `
             SELECT t.*, c.nombre as cliente_nombre, c.origen_default as cliente_origen,
-                   a.nombre as operador_nombre
+                   a.nombre as operador_nombre,
+                   tv.nombre as tipo_vehiculo_nombre, tv.capacidad_toneladas as tipo_vehiculo_capacidad
             FROM tickets t
             LEFT JOIN clientes c ON t.cliente_id = c.id
             LEFT JOIN administradores a ON t.operador_creador_id = a.id
+            LEFT JOIN tipos_vehiculos tv ON t.tipo_vehiculo_id = tv.id
             WHERE 1=1
         `;
         const params = [];
@@ -34,10 +36,12 @@ exports.getById = async (req, res) => {
     try {
         const [tickets] = await pool.query(
             `SELECT t.*, c.nombre as cliente_nombre, c.origen_default as cliente_origen,
-                    a.nombre as operador_nombre
+                    a.nombre as operador_nombre,
+                    tv.nombre as tipo_vehiculo_nombre, tv.capacidad_toneladas as tipo_vehiculo_capacidad
              FROM tickets t
              LEFT JOIN clientes c ON t.cliente_id = c.id
              LEFT JOIN administradores a ON t.operador_creador_id = a.id
+             LEFT JOIN tipos_vehiculos tv ON t.tipo_vehiculo_id = tv.id
              WHERE t.id = ?`,
             [req.params.id]
         );
@@ -86,13 +90,13 @@ exports.getById = async (req, res) => {
 // Crear un ticket manualmente desde el panel
 exports.create = async (req, res) => {
     try {
-        const { cliente_id, origen, destino, cantidad_camiones, fecha_requerida, observaciones } = req.body;
+        const { cliente_id, origen, destino, cantidad_camiones, tipo_vehiculo_id, fecha_requerida, observaciones } = req.body;
         const operador_id = req.admin?.id || null;
 
         const [result] = await pool.query(
-            `INSERT INTO tickets (cliente_id, origen, destino, cantidad_camiones, fecha_requerida, observaciones, operador_creador_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [cliente_id, origen, destino || null, cantidad_camiones || 1, fecha_requerida, observaciones || null, operador_id]
+            `INSERT INTO tickets (cliente_id, origen, destino, cantidad_camiones, tipo_vehiculo_id, fecha_requerida, observaciones, operador_creador_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [cliente_id, origen, destino || null, cantidad_camiones || 1, tipo_vehiculo_id || null, fecha_requerida, observaciones || null, operador_id]
         );
 
         // Log de acción
