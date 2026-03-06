@@ -21,7 +21,17 @@ async function initializeDatabase() {
       .filter(s => s.length > 0);
 
     for (const statement of statements) {
-      await pool.query(statement);
+      try {
+        await pool.query(statement);
+      } catch (stmtError) {
+        // Ignorar errores esperados en migraciones incrementales
+        const ignorable = ['ER_DUP_FIELDNAME', 'ER_TABLE_EXISTS_ERROR', 'ER_DUP_KEYNAME'];
+        if (ignorable.includes(stmtError.code)) {
+          // columna/tabla/índice ya existe — OK
+        } else {
+          throw stmtError;
+        }
+      }
     }
 
     console.log('✓ Base de datos inicializada correctamente');

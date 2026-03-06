@@ -45,6 +45,9 @@ export default function Tickets() {
     const [comisionModo, setComisionModo] = useState({});
     const [filtroTipoAsignar, setFiltroTipoAsignar] = useState(null);
 
+    const [modalVehiculo, setModalVehiculo] = useState({ show: false, asigId: null });
+    const [formVehiculo, setFormVehiculo] = useState({ placa: '', conductor: '', pagador: '', loading: false, error: '' });
+
     useEffect(() => {
         fetchTickets();
         fetchClientes();
@@ -197,17 +200,30 @@ export default function Tickets() {
         } catch (e) { alert('Error: ' + e.message); }
     };
 
-    const registrarDatos = async (asigId) => {
-        const placa = prompt('Placa del camión:');
-        if (!placa) return;
-        const conductor = prompt('Nombre del conductor:');
-        if (!conductor) return;
+    const registrarDatos = (asigId) => {
+        setFormVehiculo({ placa: '', conductor: '', pagador: '', loading: false, error: '' });
+        setModalVehiculo({ show: true, asigId });
+    };
+
+    const guardarVehiculo = async () => {
+        const { placa, conductor, pagador } = formVehiculo;
+        if (!placa.trim() || !conductor.trim()) {
+            setFormVehiculo(f => ({ ...f, error: 'Placa y conductor son obligatorios' }));
+            return;
+        }
+        setFormVehiculo(f => ({ ...f, loading: true, error: '' }));
         try {
-            const { data } = await api.put(`/asignaciones/${asigId}/datos-camion`, { placa_camion: placa, conductor_nombre: conductor });
-            alert(`Vehículo registrado (${data.vehiculos_registrados}/${data.vehiculos_requeridos}).`);
+            const { data } = await api.put(`/asignaciones/${modalVehiculo.asigId}/datos-camion`, {
+                placa_camion: placa.trim().toUpperCase(),
+                conductor_nombre: conductor.trim(),
+                pagador_flete: pagador.trim() || null,
+            });
+            setModalVehiculo({ show: false, asigId: null });
             verDetalle(ticketDetalle.id);
             fetchTickets();
-        } catch (e) { alert('Error: ' + (e.response?.data?.error || e.message)); }
+        } catch (e) {
+            setFormVehiculo(f => ({ ...f, loading: false, error: e.response?.data?.error || e.message }));
+        }
     };
 
     const notificarClienteVehiculo = async (vehiculoId) => {
@@ -511,10 +527,15 @@ export default function Tickets() {
                                                                 </td>
                                                             </tr>
                                                             {vehiculos.map(v => (
-                                                                <tr key={`v-${v.id}`}>
+                                                                <tr key={`v-${v.id}`} style={{ background: '#fafbfc' }}>
                                                                     <td className="ps-4 text-muted small">🚛 <strong>{v.placa}</strong></td>
                                                                     <td className="text-center text-muted small">👤 {v.conductor_nombre}</td>
-                                                                    <td colSpan="5" className="text-muted" style={{ fontSize: 11 }}>
+                                                                    <td className="text-muted small">
+                                                                        {v.pagador_flete
+                                                                            ? <span style={{ background: '#e8f5e9', color: '#2e7d32', borderRadius: 6, padding: '2px 8px', fontWeight: 600, fontSize: 11 }}>💳 {v.pagador_flete}</span>
+                                                                            : <span className="text-muted" style={{ fontSize: 11 }}>—</span>}
+                                                                    </td>
+                                                                    <td colSpan="4" className="text-muted" style={{ fontSize: 11 }}>
                                                                         {v.fecha_registro ? new Date(v.fecha_registro).toLocaleString('es-CO') : ''}
                                                                     </td>
                                                                     <td>
@@ -749,6 +770,71 @@ export default function Tickets() {
                 </div>
                 );
             })()}
+
+            {/* ============ Modal Registrar Vehículo ============ */}
+            {modalVehiculo.show && (
+                <div className="modal show d-block" style={{ background: 'rgba(0,0,0,.45)', zIndex: 1060 }}>
+                    <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 420 }}>
+                        <div className="modal-content shadow-lg" style={{ borderRadius: 16 }}>
+                            <div className="modal-header border-0 pb-0">
+                                <h6 className="modal-title fw-bold">🚛 Registrar Vehículo</h6>
+                                <button type="button" className="btn-close" onClick={() => setModalVehiculo({ show: false, asigId: null })} />
+                            </div>
+                            <div className="modal-body pt-2">
+                                {formVehiculo.error && (
+                                    <div className="alert alert-danger py-2 small mb-3">{formVehiculo.error}</div>
+                                )}
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold small mb-1">Placa del camión <span className="text-danger">*</span></label>
+                                    <input
+                                        className="form-control"
+                                        placeholder="Ej: ABC-123"
+                                        value={formVehiculo.placa}
+                                        onChange={e => setFormVehiculo(f => ({ ...f, placa: e.target.value.toUpperCase() }))}
+                                        autoFocus
+                                        maxLength={15}
+                                    />
+                                </div>
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold small mb-1">Nombre del conductor <span className="text-danger">*</span></label>
+                                    <input
+                                        className="form-control"
+                                        placeholder="Ej: Juan Pérez"
+                                        value={formVehiculo.conductor}
+                                        onChange={e => setFormVehiculo(f => ({ ...f, conductor: e.target.value }))}
+                                        maxLength={100}
+                                    />
+                                </div>
+                                <div className="mb-1">
+                                    <label className="form-label fw-semibold small mb-1">Pagador del flete</label>
+                                    <select
+                                        className="form-select"
+                                        value={formVehiculo.pagador}
+                                        onChange={e => setFormVehiculo(f => ({ ...f, pagador: e.target.value }))}>
+                                        <option value="">— Sin especificar —</option>
+                                        <option value="Cliente">Cliente</option>
+                                        <option value="Empresa de transporte">Empresa de transporte</option>
+                                        <option value="FALC">FALC</option>
+                                        <option value="A convenir">A convenir</option>
+                                    </select>
+                                    <div className="text-muted mt-1" style={{ fontSize: 11 }}>¿Quién paga el flete a este chofer?</div>
+                                </div>
+                            </div>
+                            <div className="modal-footer border-0 pt-0">
+                                <button className="btn btn-secondary btn-sm" onClick={() => setModalVehiculo({ show: false, asigId: null })}>
+                                    Cancelar
+                                </button>
+                                <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={guardarVehiculo}
+                                    disabled={formVehiculo.loading}>
+                                    {formVehiculo.loading ? 'Guardando...' : '✓ Guardar vehículo'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

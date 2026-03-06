@@ -221,6 +221,7 @@ CREATE TABLE IF NOT EXISTS vehiculos_asignados (
     asignacion_id INT NOT NULL,
     placa_camion VARCHAR(20) NOT NULL,
     conductor_nombre VARCHAR(100) NOT NULL,
+    pagador_flete VARCHAR(100) NULL,
     notificado_cliente TINYINT(1) DEFAULT 0,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (asignacion_id) REFERENCES asignaciones(id) ON DELETE CASCADE
@@ -237,3 +238,6 @@ CREATE TABLE IF NOT EXISTS acciones_log (
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (operador_id) REFERENCES administradores(id) ON DELETE SET NULL
 );
+
+-- Migraciones incrementales (idempotentes vía manejo de error en initDb.js)
+ALTER TABLE vehiculos_asignados ADD COLUMN pagador_flete VARCHAR(100) NULL AFTER conductor_nombre;

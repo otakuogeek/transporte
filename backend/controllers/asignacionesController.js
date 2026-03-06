@@ -158,7 +158,7 @@ exports.responder = async (req, res) => {
 exports.registrarDatosCamion = async (req, res) => {
     try {
         const { id } = req.params;
-        const { placa_camion, conductor_nombre } = req.body;
+        const { placa_camion, conductor_nombre, pagador_flete } = req.body;
 
         if (!placa_camion || !conductor_nombre) {
             return res.status(400).json({ error: 'Placa y conductor son requeridos' });
@@ -178,8 +178,8 @@ exports.registrarDatosCamion = async (req, res) => {
 
         // Insertar vehículo
         const [result] = await pool.query(
-            'INSERT INTO vehiculos_asignados (asignacion_id, placa, conductor_nombre) VALUES (?, ?, ?)',
-            [id, placa_camion.trim().toUpperCase(), conductor_nombre.trim()]
+            'INSERT INTO vehiculos_asignados (asignacion_id, placa, conductor_nombre, pagador_flete) VALUES (?, ?, ?, ?)',
+            [id, placa_camion.trim().toUpperCase(), conductor_nombre.trim(), pagador_flete ? pagador_flete.trim() : null]
         );
 
         // Actualizar placa/conductor en asignacion por compatibilidad
