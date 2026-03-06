@@ -38,7 +38,7 @@ export default function Tickets() {
     const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
 
     const [modalCrear, setModalCrear] = useState(false);
-    const [formTicket, setFormTicket] = useState({ cliente_id: '', origen: '', destino: '', cantidad_camiones: 1, tipo_vehiculo_id: null, fecha_requerida: '', observaciones: '' });
+    const [formTicket, setFormTicket] = useState({ cliente_id: '', origen: '', destino: '', cantidad_camiones: 1, tipo_vehiculo_id: null, fecha_requerida: '', hora_requerida: '', observaciones: '' });
 
     const [modalAsignar, setModalAsignar] = useState(false);
     const [asignacionesForm, setAsignacionesForm] = useState({});
@@ -140,9 +140,14 @@ export default function Tickets() {
             const clienteSel = clientes.find(c => c.id == formTicket.cliente_id);
             const origen = formTicket.origen || clienteSel?.origen_default || '';
             const destino = destinoUnico || formTicket.destino;
-            await api.post('/tickets', { ...formTicket, origen, destino });
+            const fechaHora = formTicket.fecha_requerida
+                ? (formTicket.hora_requerida
+                    ? `${formTicket.fecha_requerida}T${formTicket.hora_requerida}`
+                    : `${formTicket.fecha_requerida}T00:00`)
+                : null;
+            await api.post('/tickets', { ...formTicket, origen, destino, fecha_requerida: fechaHora });
             setModalCrear(false);
-            setFormTicket({ cliente_id: '', origen: '', destino: '', cantidad_camiones: 1, tipo_vehiculo_id: null, fecha_requerida: '', observaciones: '' });
+            setFormTicket({ cliente_id: '', origen: '', destino: '', cantidad_camiones: 1, tipo_vehiculo_id: null, fecha_requerida: '', hora_requerida: '', observaciones: '' });
             setTipoSeleccionado(null);
             setTipoBusqueda('');
             fetchTickets();
@@ -364,8 +369,12 @@ export default function Tickets() {
                                     </div>
                                     <div className="col-6">
                                         <label className="form-label fw-semibold small">Fecha Requerida *</label>
-                                        <input type="datetime-local" className="form-control" value={formTicket.fecha_requerida} onChange={e => setFormTicket({ ...formTicket, fecha_requerida: e.target.value })} />
+                                        <input type="date" className="form-control" required value={formTicket.fecha_requerida} onChange={e => setFormTicket({ ...formTicket, fecha_requerida: e.target.value })} />
                                     </div>
+                                </div>
+                                <div className="mb-3">
+                                    <label className="form-label fw-semibold small">Hora <span className="fw-normal text-muted" style={{ fontSize: 11 }}>(opcional)</span></label>
+                                    <input type="time" className="form-control" value={formTicket.hora_requerida} onChange={e => setFormTicket({ ...formTicket, hora_requerida: e.target.value })} />
                                 </div>
                                 {/* Tipo de vehículo autocomplete */}
                                 <div className="mb-3">
