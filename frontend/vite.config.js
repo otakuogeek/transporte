@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/*.svg', 'icons/*.png', 'logo-falc.png'],
+      includeAssets: ['icons/*.svg', 'icons/*.png', 'favicon-falc.jpg'],
       manifest: {
         name: 'FALC Logística de Carga',
         short_name: 'FALC',
@@ -20,8 +20,9 @@ export default defineConfig({
         start_url: '/',
         lang: 'es',
         icons: [
-          { src: 'logo-falc.png', sizes: 'any', type: 'image/png' },
-          { src: 'logo-falc.png', sizes: 'any', type: 'image/png', purpose: 'any maskable' },
+          { src: 'icons/icon-192.svg', sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+          { src: 'icons/icon-512.svg', sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: 'favicon-falc.jpg', sizes: '656x657', type: 'image/jpeg' },
         ],
         categories: ['business', 'productivity'],
       },
@@ -29,7 +30,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,jpg,jpeg,ico,woff2,webmanifest}'],
         navigateFallback: '/index.html',
         runtimeCaching: [
           {

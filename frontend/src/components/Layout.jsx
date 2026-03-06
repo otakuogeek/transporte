@@ -53,12 +53,14 @@ const menuItems = [
 ];
 
 export default function Layout({ children }) {
+  const IOS_INSTALL_HINT_KEY = 'falc_ios_pwa_hint_dismissed_at';
   const { admin, logout, tienePermiso } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState(null);
   const [showUpdate, setShowUpdate] = useState(false);
   const [showOfflineReady, setShowOfflineReady] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -74,9 +76,58 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
-    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); setShowInstall(true); };
+    const handler = (e) => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isAndroid = /android/.test(userAgent);
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setInstallPlatform('android');
+      if (isAndroid) setShowInstall(true);
+    };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/crios|fxios|edgios|opr\//.test(userAgent);
+    const isMobile = isIOS || isAndroid;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const dismissedAt = parseInt(localStorage.getItem(IOS_INSTALL_HINT_KEY) || '0', 10);
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    const iosHintDismissed = dismissedAt > 0 && (Date.now() - dismissedAt) < threeDays;
+
+    if (!isMobile || isStandalone) return;
+
+    if (isIOS) {
+      if (iosHintDismissed) return;
+      setInstallPlatform(isSafari ? 'ios' : 'ios-open-safari');
+      setShowInstall(true);
+      return;
+    }
+
+    if (isAndroid && !deferredPrompt) {
+      const t = setTimeout(() => {
+        if (!window.matchMedia('(display-mode: standalone)').matches) {
+          setInstallPlatform((prev) => prev || 'android-manual');
+          setShowInstall(true);
+        }
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [deferredPrompt]);
+
+  useEffect(() => {
+    const onInstalled = () => {
+      setShowInstall(false);
+      setDeferredPrompt(null);
+      setInstallPlatform(null);
+    };
+
+    window.addEventListener('appinstalled', onInstalled);
+    return () => window.removeEventListener('appinstalled', onInstalled);
   }, []);
 
   useEffect(() => {
@@ -124,6 +175,13 @@ export default function Layout({ children }) {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  const dismissInstallBanner = () => {
+    if (installPlatform === 'ios' || installPlatform === 'ios-open-safari') {
+      localStorage.setItem(IOS_INSTALL_HINT_KEY, String(Date.now()));
+    }
+    setShowInstall(false);
+  };
+
   return (
     <div className="d-flex min-vh-100" style={{ background: 'var(--falc-bg)' }}>
       {/* Overlay mobile */}
@@ -137,9 +195,9 @@ export default function Layout({ children }) {
         aria-label="Menú principal">
         <div className="text-center py-3 px-3" style={{ borderBottom: '1px solid var(--falc-border)' }}>
           <img
-            src="/logo-falc.png"
+            src="/favicon-falc.jpg"
             alt="FALC"
-            style={{ width: '100%', maxWidth: 170, height: 'auto' }}
+            style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 12 }}
           />
         </div>
         <nav className="flex-grow-1 py-3">
@@ -166,7 +224,7 @@ export default function Layout({ children }) {
             aria-label="Abrir menú" aria-expanded={sidebarOpen}>
             {sidebarOpen ? '✕' : '☰'}
           </button>
-          <img src="/logo-falc.png" alt="FALC" style={{ height: 24, width: 'auto' }} />
+          <img src="/favicon-falc.jpg" alt="FALC" style={{ height: 30, width: 30, objectFit: 'cover', borderRadius: 6 }} />
           <span className="ms-auto small text-muted text-truncate" style={{ maxWidth: 120 }}>
             {menuItems.find(m => m.path === location.pathname)?.label || ''}
           </span>
@@ -179,9 +237,19 @@ export default function Layout({ children }) {
       {/* PWA Install Banner */}
       {showInstall && (
         <div id="pwa-install-banner" className="show">
-          <span>📲 Instalar FALC como app</span>
-          <button onClick={handleInstall}>Instalar</button>
-          <button className="pwa-dismiss" onClick={() => setShowInstall(false)} aria-label="Cerrar">✕</button>
+          <span>
+            {installPlatform === 'ios' && '📲 Instala FALC: Compartir → Añadir a pantalla de inicio'}
+            {installPlatform === 'ios-open-safari' && '📲 Para instalar en iPhone/iPad, abre esta web en Safari y usa Compartir → Añadir a pantalla de inicio'}
+            {installPlatform === 'android-manual' && '📲 Instala FALC desde el menú del navegador: “Instalar app” o “Añadir a pantalla de inicio”'}
+            {(installPlatform === 'android' || !installPlatform) && '📲 Instalar FALC como app'}
+          </span>
+          {installPlatform === 'android' && deferredPrompt && (
+            <button onClick={handleInstall}>Instalar</button>
+          )}
+          {(installPlatform === 'ios' || installPlatform === 'ios-open-safari' || installPlatform === 'android-manual') && (
+            <button onClick={dismissInstallBanner}>Entendido</button>
+          )}
+          <button className="pwa-dismiss" onClick={dismissInstallBanner} aria-label="Cerrar">✕</button>
         </div>
       )}
 

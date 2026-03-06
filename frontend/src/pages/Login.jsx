@@ -1,17 +1,76 @@
 // src/pages/Login.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
+  const IOS_INSTALL_HINT_KEY = 'falc_ios_pwa_hint_dismissed_at';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstall, setShowInstall] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handler = (e) => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isAndroid = /android/.test(userAgent);
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setInstallPlatform('android');
+      if (isAndroid) setShowInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isSafari = /safari/.test(userAgent) && !/crios|fxios|edgios|opr\//.test(userAgent);
+    const isMobile = isIOS || isAndroid;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const dismissedAt = parseInt(localStorage.getItem(IOS_INSTALL_HINT_KEY) || '0', 10);
+    const threeDays = 3 * 24 * 60 * 60 * 1000;
+    const iosHintDismissed = dismissedAt > 0 && (Date.now() - dismissedAt) < threeDays;
+
+    if (!isMobile || isStandalone) return;
+
+    if (isIOS) {
+      if (iosHintDismissed) return;
+      setInstallPlatform(isSafari ? 'ios' : 'ios-open-safari');
+      setShowInstall(true);
+      return;
+    }
+
+    if (isAndroid && !deferredPrompt) {
+      const t = setTimeout(() => {
+        if (!window.matchMedia('(display-mode: standalone)').matches) {
+          setInstallPlatform((prev) => prev || 'android-manual');
+          setShowInstall(true);
+        }
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [deferredPrompt]);
+
+  useEffect(() => {
+    const onInstalled = () => {
+      setShowInstall(false);
+      setDeferredPrompt(null);
+      setInstallPlatform(null);
+    };
+
+    window.addEventListener('appinstalled', onInstalled);
+    return () => window.removeEventListener('appinstalled', onInstalled);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,8 +86,41 @@ export default function Login() {
     }
   };
 
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setShowInstall(false);
+    setDeferredPrompt(null);
+  };
+
+  const dismissInstallBanner = () => {
+    if (installPlatform === 'ios' || installPlatform === 'ios-open-safari') {
+      localStorage.setItem(IOS_INSTALL_HINT_KEY, String(Date.now()));
+    }
+    setShowInstall(false);
+  };
+
   return (
     <div className="container-fluid vh-100 p-0">
+      {showInstall && (
+        <div id="pwa-install-banner" className="show">
+          <span>
+            {installPlatform === 'ios' && '📲 Instala FALC: Compartir → Añadir a pantalla de inicio'}
+            {installPlatform === 'ios-open-safari' && '📲 Para instalar en iPhone/iPad, abre esta web en Safari y usa Compartir → Añadir a pantalla de inicio'}
+            {installPlatform === 'android-manual' && '📲 Instala FALC desde el menú del navegador: “Instalar app” o “Añadir a pantalla de inicio”'}
+            {(installPlatform === 'android' || !installPlatform) && '📲 Instalar FALC como app'}
+          </span>
+          {installPlatform === 'android' && deferredPrompt && (
+            <button onClick={handleInstall}>Instalar</button>
+          )}
+          {(installPlatform === 'ios' || installPlatform === 'ios-open-safari' || installPlatform === 'android-manual') && (
+            <button onClick={dismissInstallBanner}>Entendido</button>
+          )}
+          <button className="pwa-dismiss" onClick={dismissInstallBanner} aria-label="Cerrar">✕</button>
+        </div>
+      )}
+
       <div className="row g-0 h-100">
         {/* ===== PANEL IZQUIERDO — Imagen (oculto en móvil) ===== */}
         <div className="col-lg-7 d-none d-lg-flex position-relative overflow-hidden"
@@ -41,14 +133,13 @@ export default function Login() {
           <div className="position-relative d-flex flex-column justify-content-between w-100 p-5" style={{ zIndex: 2 }}>
             <div className="d-flex align-items-center gap-3">
               <img
-                src="/logo-falc.png"
+                src="/favicon-falc.jpg"
                 alt="FALC"
                 style={{
-                  width: 220,
-                  maxWidth: '100%',
-                  height: 'auto',
-                  filter: 'brightness(0) invert(1)',
-                  opacity: 0.95,
+                  width: 96,
+                  height: 96,
+                  objectFit: 'cover',
+                  borderRadius: 18,
                 }}
               />
             </div>
@@ -68,7 +159,7 @@ export default function Login() {
           <div style={{ width: '100%', maxWidth: 380 }}>
             {/* Logo + Título */}
             <div className="text-center mb-4">
-              <img src="/logo-falc.png" alt="FALC" className="mx-auto d-block mb-3" style={{ width: 220, maxWidth: '100%', height: 'auto' }} />
+              <img src="/favicon-falc.jpg" alt="FALC" className="mx-auto d-block mb-3" style={{ width: 92, height: 92, objectFit: 'cover', borderRadius: 16 }} />
               <h1 className="fw-bold mb-1" style={{ fontSize: 26, color: '#1a1a2e' }}>Bienvenido</h1>
               <p className="text-muted small mb-0">Ingresa tus credenciales para acceder</p>
             </div>

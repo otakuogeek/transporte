@@ -1,5 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="32" fill="#1a1a2e"/>
-  <text x="96" y="115" text-anchor="middle" font-size="90" font-family="system-ui,sans-serif">🚛</text>
-  <text x="96" y="155" text-anchor="middle" font-size="22" font-weight="bold" font-family="system-ui,sans-serif" fill="#e94560" letter-spacing="3">FALC</text>
+  <defs>
+    <clipPath id="rounded">
+      <rect width="192" height="192" rx="36" ry="36" />
+    </clipPath>
+  </defs>
+  <rect width="192" height="192" rx="36" ry="36" fill="#ffffff" />
+  <image
+    href="/favicon-falc.jpg"
+    x="0"
+    y="0"
+    width="192"
+    height="192"
+    preserveAspectRatio="xMidYMid slice"
+    clip-path="url(#rounded)"
+  />
 </svg>
