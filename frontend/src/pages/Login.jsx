@@ -146,6 +146,7 @@ export default function Login() {
                   height: 96,
                   objectFit: 'cover',
                   borderRadius: 18,
+                  backgroundColor: '#81c149',
                 }}
               />
             </div>
@@ -165,7 +166,7 @@ export default function Login() {
           <div style={{ width: '100%', maxWidth: 380 }}>
             {/* Logo + Título */}
             <div className="text-center mb-4">
-              <img src="/favicon-falc.jpg" alt="FALC" className="mx-auto d-block mb-3" style={{ width: 92, height: 92, objectFit: 'cover', borderRadius: 16 }} />
+              <img src="/favicon-falc.jpg" alt="FALC" className="mx-auto d-block mb-3" style={{ width: 92, height: 92, objectFit: 'cover', borderRadius: 16, backgroundColor: '#81c149' }} />
               <h1 className="fw-bold mb-1" style={{ fontSize: 26, color: '#1a1a2e' }}>Bienvenido</h1>
               <p className="text-muted small mb-0">Ingresa tus credenciales para acceder</p>
             </div>

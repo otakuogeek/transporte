@@ -211,7 +211,7 @@ export default function Layout({ children }) {
           <img
             src="/favicon-falc.jpg"
             alt="FALC"
-            style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 12 }}
+            style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 12, backgroundColor: '#81c149' }}
           />
         </div>
         <nav className="flex-grow-1 py-3">
@@ -238,7 +238,7 @@ export default function Layout({ children }) {
             aria-label="Abrir menú" aria-expanded={sidebarOpen}>
             {sidebarOpen ? '✕' : '☰'}
           </button>
-          <img src="/favicon-falc.jpg" alt="FALC" style={{ height: 30, width: 30, objectFit: 'cover', borderRadius: 6 }} />
+          <img src="/favicon-falc.jpg" alt="FALC" style={{ height: 30, width: 30, objectFit: 'cover', borderRadius: 6, backgroundColor: '#81c149' }} />
           <span className="ms-auto small text-muted text-truncate" style={{ maxWidth: 120 }}>
             {menuItems.find(m => m.path === location.pathname)?.label || ''}
           </span>

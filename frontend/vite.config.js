@@ -14,7 +14,7 @@ export default defineConfig({
         short_name: 'FALC',
         description: 'Sistema de gestión de logística y transporte de carga',
         theme_color: '#1a7a2e',
-        background_color: '#ffffff',
+        background_color: '#1a7a2e',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
