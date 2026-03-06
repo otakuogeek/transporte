@@ -807,16 +807,13 @@ export default function Tickets() {
                                 </div>
                                 <div className="mb-1">
                                     <label className="form-label fw-semibold small mb-1">Pagador del flete</label>
-                                    <select
-                                        className="form-select"
+                                    <input
+                                        className="form-control"
+                                        placeholder="Ej: Cliente, Empresa, FALC…"
                                         value={formVehiculo.pagador}
-                                        onChange={e => setFormVehiculo(f => ({ ...f, pagador: e.target.value }))}>
-                                        <option value="">— Sin especificar —</option>
-                                        <option value="Cliente">Cliente</option>
-                                        <option value="Empresa de transporte">Empresa de transporte</option>
-                                        <option value="FALC">FALC</option>
-                                        <option value="A convenir">A convenir</option>
-                                    </select>
+                                        onChange={e => setFormVehiculo(f => ({ ...f, pagador: e.target.value }))}
+                                        maxLength={100}
+                                    />
                                     <div className="text-muted mt-1" style={{ fontSize: 11 }}>¿Quién paga el flete a este chofer?</div>
                                 </div>
                             </div>
