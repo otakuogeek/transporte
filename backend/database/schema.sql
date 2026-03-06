@@ -210,10 +210,12 @@ CREATE TABLE IF NOT EXISTS asignaciones (
     placa_camion VARCHAR(20) NULL,
     conductor_nombre VARCHAR(100) NULL,
     tipo_camion VARCHAR(50) NULL,
+    pagador_flete VARCHAR(100) NULL,
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE,
     FOREIGN KEY (transporte_id) REFERENCES transportes(id),
     FOREIGN KEY (operador_asignador_id) REFERENCES administradores(id)
 );
+ALTER TABLE asignaciones ADD COLUMN pagador_flete VARCHAR(100) NULL AFTER tipo_camion;
 
 -- Tabla de Vehículos Asignados (placa + conductor por asignación)
 CREATE TABLE IF NOT EXISTS vehiculos_asignados (

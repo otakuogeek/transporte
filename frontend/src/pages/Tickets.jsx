@@ -46,7 +46,7 @@ export default function Tickets() {
     const [filtroTipoAsignar, setFiltroTipoAsignar] = useState(null);
 
     const [modalVehiculo, setModalVehiculo] = useState({ show: false, asigId: null });
-    const [formVehiculo, setFormVehiculo] = useState({ placa: '', conductor: '', pagador: '', loading: false, error: '' });
+    const [formVehiculo, setFormVehiculo] = useState({ placa: '', conductor: '', loading: false, error: '' });
 
     useEffect(() => {
         fetchTickets();
@@ -179,7 +179,8 @@ export default function Tickets() {
                 cantidad_camiones: parseInt(v.cantidad) || 1,
                 precio: v.precio ? parseFloat(v.precio) : null,
                 comision: v.comision ? parseFloat(v.comision) : null,
-                comision_porcentaje: v.comision_porcentaje ? parseFloat(v.comision_porcentaje) : null
+                comision_porcentaje: v.comision_porcentaje ? parseFloat(v.comision_porcentaje) : null,
+                pagador_flete: v.pagador_flete || null
             }));
         if (items.length === 0) { alert('Asigna al menos 1 camión a un transporte'); return; }
         if (totalNuevosAsignados > camionesPorAsignar) { alert(`Solo quedan ${camionesPorAsignar} camiones por asignar`); return; }
@@ -201,12 +202,12 @@ export default function Tickets() {
     };
 
     const registrarDatos = (asigId) => {
-        setFormVehiculo({ placa: '', conductor: '', pagador: '', loading: false, error: '' });
+        setFormVehiculo({ placa: '', conductor: '', loading: false, error: '' });
         setModalVehiculo({ show: true, asigId });
     };
 
     const guardarVehiculo = async () => {
-        const { placa, conductor, pagador } = formVehiculo;
+        const { placa, conductor } = formVehiculo;
         if (!placa.trim() || !conductor.trim()) {
             setFormVehiculo(f => ({ ...f, error: 'Placa y conductor son obligatorios' }));
             return;
@@ -216,7 +217,6 @@ export default function Tickets() {
             const { data } = await api.put(`/asignaciones/${modalVehiculo.asigId}/datos-camion`, {
                 placa_camion: placa.trim().toUpperCase(),
                 conductor_nombre: conductor.trim(),
-                pagador_flete: pagador.trim() || null,
             });
             setModalVehiculo({ show: false, asigId: null });
             verDetalle(ticketDetalle.id);
@@ -491,7 +491,14 @@ export default function Tickets() {
                                                         return (
                                                         <React.Fragment key={a.id}>
                                                             <tr className="table-light">
-                                                                <td className="fw-bold">{a.transporte_nombre}</td>
+                                                                <td className="fw-bold">
+                                                                    {a.transporte_nombre}
+                                                                    {a.pagador_flete && (
+                                                                        <div style={{ marginTop: 2 }}>
+                                                                            <span style={{ background: '#e8f5e9', color: '#2e7d32', borderRadius: 6, padding: '1px 7px', fontWeight: 600, fontSize: 11 }}>💳 {a.pagador_flete}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </td>
                                                                 <td className="text-center fw-bold">{vehiculos.length}/{a.cantidad_camiones || 1}</td>
                                                                 <td className="text-end fw-bold" style={{ color: a.precio ? '#1976d2' : '#bbb' }}>
                                                                     {a.precio ? `$${parseFloat(a.precio).toLocaleString('es-AR')}` : '—'}
@@ -530,11 +537,7 @@ export default function Tickets() {
                                                                 <tr key={`v-${v.id}`} style={{ background: '#fafbfc' }}>
                                                                     <td className="ps-4 text-muted small">🚛 <strong>{v.placa}</strong></td>
                                                                     <td className="text-center text-muted small">👤 {v.conductor_nombre}</td>
-                                                                    <td className="text-muted small">
-                                                                        {v.pagador_flete
-                                                                            ? <span style={{ background: '#e8f5e9', color: '#2e7d32', borderRadius: 6, padding: '2px 8px', fontWeight: 600, fontSize: 11 }}>💳 {v.pagador_flete}</span>
-                                                                            : <span className="text-muted" style={{ fontSize: 11 }}>—</span>}
-                                                                    </td>
+                                                                    <td className="text-muted small">&nbsp;</td>
                                                                     <td colSpan="4" className="text-muted" style={{ fontSize: 11 }}>
                                                                         {v.fecha_registro ? new Date(v.fecha_registro).toLocaleString('es-CO') : ''}
                                                                     </td>
@@ -635,6 +638,7 @@ export default function Tickets() {
                                                         <th className="text-center" style={{ width: 100 }}>Precio $</th>
                                                         <th className="text-center" style={{ width: 135 }}>Comisión</th>
                                                         <th className="text-center" style={{ width: 95 }}>Neto</th>
+                                                        <th className="text-center" style={{ width: 130 }}>Pagador flete</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -741,6 +745,15 @@ export default function Tickets() {
                                                                     return <span style={{ color: neto >= 0 ? '#388e3c' : '#c62828', fontSize: 13 }}>${neto.toLocaleString('es-AR')}</span>;
                                                                 })()}
                                                             </td>
+                                                            <td className="text-center">
+                                                                <input type="text"
+                                                                    className="form-control form-control-sm p-1"
+                                                                    style={{ width: 120, fontSize: 12 }}
+                                                                    value={asignacionesForm[t.id]?.pagador_flete || ''}
+                                                                    onChange={e => setAsignacionesForm({ ...asignacionesForm, [t.id]: { ...(asignacionesForm[t.id] || {}), pagador_flete: e.target.value } })}
+                                                                    placeholder="Quién paga..."
+                                                                    disabled={sinDisp} />
+                                                            </td>
                                                         </tr>
                                                         );
                                                     })}
@@ -804,17 +817,6 @@ export default function Tickets() {
                                         onChange={e => setFormVehiculo(f => ({ ...f, conductor: e.target.value }))}
                                         maxLength={100}
                                     />
-                                </div>
-                                <div className="mb-1">
-                                    <label className="form-label fw-semibold small mb-1">Pagador del flete</label>
-                                    <input
-                                        className="form-control"
-                                        placeholder="Ej: Cliente, Empresa, FALC…"
-                                        value={formVehiculo.pagador}
-                                        onChange={e => setFormVehiculo(f => ({ ...f, pagador: e.target.value }))}
-                                        maxLength={100}
-                                    />
-                                    <div className="text-muted mt-1" style={{ fontSize: 11 }}>¿Quién paga el flete a este chofer?</div>
                                 </div>
                             </div>
                             <div className="modal-footer border-0 pt-0">

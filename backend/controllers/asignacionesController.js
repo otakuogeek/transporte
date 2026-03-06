@@ -4,7 +4,7 @@ const pool = require('../database/connection');
 exports.asignar = async (req, res) => {
     try {
         const { ticket_id, asignaciones } = req.body;
-        // asignaciones = [{ transporte_id, cantidad_camiones, precio, comision, comision_porcentaje }]
+        // asignaciones = [{ transporte_id, cantidad_camiones, precio, comision, comision_porcentaje, pagador_flete }]
         const operador_id = req.admin?.id || null;
 
         if (!ticket_id || !asignaciones || asignaciones.length === 0) {
@@ -31,8 +31,8 @@ exports.asignar = async (req, res) => {
         const resultados = [];
         for (const a of asignaciones) {
             const [result] = await pool.query(
-                'INSERT INTO asignaciones (ticket_id, transporte_id, cantidad_camiones, precio, comision, comision_porcentaje, operador_asignador_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [ticket_id, a.transporte_id, a.cantidad_camiones || 1, a.precio || null, a.comision || null, a.comision_porcentaje || null, operador_id]
+                'INSERT INTO asignaciones (ticket_id, transporte_id, cantidad_camiones, precio, comision, comision_porcentaje, operador_asignador_id, pagador_flete) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [ticket_id, a.transporte_id, a.cantidad_camiones || 1, a.precio || null, a.comision || null, a.comision_porcentaje || null, operador_id, a.pagador_flete || null]
             );
             resultados.push(result.insertId);
 
