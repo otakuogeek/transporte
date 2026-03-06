@@ -13,6 +13,7 @@ export default function Login() {
   const [remember, setRemember] = useState(true);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
+  const [installHiding, setInstallHiding] = useState(false);
   const [installPlatform, setInstallPlatform] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -98,13 +99,14 @@ export default function Login() {
     if (installPlatform === 'ios' || installPlatform === 'ios-open-safari') {
       localStorage.setItem(IOS_INSTALL_HINT_KEY, String(Date.now()));
     }
-    setShowInstall(false);
+    setInstallHiding(true);
+    setTimeout(() => { setShowInstall(false); setInstallHiding(false); }, 240);
   };
 
   return (
     <div className="container-fluid vh-100 p-0">
       {showInstall && (
-        <div id="pwa-install-banner" className="show">
+        <div id="pwa-install-banner" className={installHiding ? 'pwa-hiding' : 'show'}>
           <img src="/icons/icon-192.png" alt="FALC" className="pwa-banner-icon" />
           <div className="pwa-banner-body">
             <span className="pwa-banner-title">FALC Logística</span>

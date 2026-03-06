@@ -60,9 +60,12 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
+  const [installHiding, setInstallHiding] = useState(false);
   const [installPlatform, setInstallPlatform] = useState(null);
   const [showUpdate, setShowUpdate] = useState(false);
+  const [updateHiding, setUpdateHiding] = useState(false);
   const [showOfflineReady, setShowOfflineReady] = useState(false);
+  const [offlineHiding, setOfflineHiding] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const updateHandlerRef = useRef(null);
   const sidebarRef = useRef(null);
@@ -179,7 +182,18 @@ export default function Layout({ children }) {
     if (installPlatform === 'ios' || installPlatform === 'ios-open-safari') {
       localStorage.setItem(IOS_INSTALL_HINT_KEY, String(Date.now()));
     }
-    setShowInstall(false);
+    setInstallHiding(true);
+    setTimeout(() => { setShowInstall(false); setInstallHiding(false); }, 240);
+  };
+
+  const dismissUpdateBanner = () => {
+    setUpdateHiding(true);
+    setTimeout(() => { setShowUpdate(false); setUpdateHiding(false); }, 240);
+  };
+
+  const dismissOfflineBanner = () => {
+    setOfflineHiding(true);
+    setTimeout(() => { setShowOfflineReady(false); setOfflineHiding(false); }, 240);
   };
 
   return (
@@ -236,7 +250,7 @@ export default function Layout({ children }) {
 
       {/* PWA Install Banner */}
       {showInstall && (
-        <div id="pwa-install-banner" className="show">
+        <div id="pwa-install-banner" className={installHiding ? 'pwa-hiding' : 'show'}>
           <img src="/icons/icon-192.png" alt="FALC" className="pwa-banner-icon" />
           <div className="pwa-banner-body">
             <span className="pwa-banner-title">FALC Logística</span>
@@ -258,23 +272,31 @@ export default function Layout({ children }) {
       )}
 
       {showUpdate && (
-        <div id="pwa-update-banner" className="show">
-          <span>Nueva versión disponible</span>
-          <button onClick={handleUpdateApp}>Actualizar</button>
-          <button className="pwa-dismiss" onClick={() => setShowUpdate(false)} aria-label="Cerrar">✕</button>
+        <div id="pwa-update-banner" className={updateHiding ? 'pwa-hiding' : 'show'}>
+          <img src="/icons/icon-192.png" alt="FALC" className="pwa-banner-icon" />
+          <div className="pwa-banner-body">
+            <span className="pwa-banner-title">Nueva versión disponible</span>
+            <span className="pwa-banner-desc">Recarga para obtener las últimas mejoras</span>
+          </div>
+          <button className="pwa-btn-primary" onClick={handleUpdateApp}>Actualizar</button>
+          <button className="pwa-dismiss" onClick={dismissUpdateBanner} aria-label="Cerrar">✕</button>
         </div>
       )}
 
       {showOfflineReady && !isOffline && (
-        <div id="pwa-offline-banner" className="show">
-          <span>Modo offline listo</span>
-          <button className="pwa-dismiss" onClick={() => setShowOfflineReady(false)} aria-label="Cerrar">✕</button>
+        <div id="pwa-offline-banner" className={offlineHiding ? 'pwa-hiding' : 'show'}>
+          <img src="/icons/icon-192.png" alt="FALC" className="pwa-banner-icon" />
+          <div className="pwa-banner-body">
+            <span className="pwa-banner-title">App lista sin conexión</span>
+            <span className="pwa-banner-desc">FALC funciona aunque pierdas el internet</span>
+          </div>
+          <button className="pwa-dismiss" onClick={dismissOfflineBanner} aria-label="Cerrar">✕</button>
         </div>
       )}
 
       {isOffline && (
         <div id="pwa-connection-banner" className="show offline">
-          <span>Sin conexión. Usando caché local.</span>
+          Sin conexión — usando caché local
         </div>
       )}
 
