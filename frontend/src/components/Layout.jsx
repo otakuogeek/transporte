@@ -209,9 +209,9 @@ export default function Layout({ children }) {
         aria-label="Menú principal">
         <div className="text-center py-3 px-3" style={{ borderBottom: '1px solid var(--falc-border)' }}>
           <img
-            src="/favicon-falc.jpg"
+            src="/logo-falc.png"
             alt="FALC"
-            style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 12, backgroundColor: '#81c149' }}
+            style={{ width: '100%', maxWidth: 160, height: 'auto', display: 'block', margin: '0 auto' }}
           />
         </div>
         <nav className="flex-grow-1 py-3">
