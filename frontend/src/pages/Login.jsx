@@ -105,17 +105,21 @@ export default function Login() {
     <div className="container-fluid vh-100 p-0">
       {showInstall && (
         <div id="pwa-install-banner" className="show">
-          <span>
-            {installPlatform === 'ios' && '📲 Instala FALC: Compartir → Añadir a pantalla de inicio'}
-            {installPlatform === 'ios-open-safari' && '📲 Para instalar en iPhone/iPad, abre esta web en Safari y usa Compartir → Añadir a pantalla de inicio'}
-            {installPlatform === 'android-manual' && '📲 Instala FALC desde el menú del navegador: “Instalar app” o “Añadir a pantalla de inicio”'}
-            {(installPlatform === 'android' || !installPlatform) && '📲 Instalar FALC como app'}
-          </span>
+          <img src="/icons/icon-192.png" alt="FALC" className="pwa-banner-icon" />
+          <div className="pwa-banner-body">
+            <span className="pwa-banner-title">FALC Logística</span>
+            <span className="pwa-banner-desc">
+              {installPlatform === 'ios' && 'Toca Compartir › Añadir a pantalla de inicio'}
+              {installPlatform === 'ios-open-safari' && 'Abre en Safari para instalar la app'}
+              {installPlatform === 'android-manual' && 'Menú › Instalar app / Añadir a inicio'}
+              {(installPlatform === 'android' || !installPlatform) && 'Acceso rápido desde tu móvil'}
+            </span>
+          </div>
           {installPlatform === 'android' && deferredPrompt && (
-            <button onClick={handleInstall}>Instalar</button>
+            <button className="pwa-btn-primary" onClick={handleInstall}>Instalar</button>
           )}
           {(installPlatform === 'ios' || installPlatform === 'ios-open-safari' || installPlatform === 'android-manual') && (
-            <button onClick={dismissInstallBanner}>Entendido</button>
+            <button className="pwa-btn-primary" onClick={dismissInstallBanner}>Entendido</button>
           )}
           <button className="pwa-dismiss" onClick={dismissInstallBanner} aria-label="Cerrar">✕</button>
         </div>
