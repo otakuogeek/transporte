@@ -103,28 +103,14 @@ CREATE TABLE IF NOT EXISTS administradores (
 -- Tabla de Configuración WhatsApp (modo de conexión y credenciales)
 CREATE TABLE IF NOT EXISTS whatsapp_config (
     id INT PRIMARY KEY DEFAULT 1,
-    modo_conexion ENUM('baileys', 'api_oficial') DEFAULT 'api_oficial',
+    modo_conexion VARCHAR(20) DEFAULT 'api_oficial',
     wa_phone_number_id VARCHAR(100) NULL,
     wa_access_token VARCHAR(500) NULL,
     wa_verify_token VARCHAR(100) NULL,
-    baileys_status ENUM('disconnected', 'connecting', 'connected') DEFAULT 'disconnected',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 INSERT IGNORE INTO whatsapp_config (id, modo_conexion) VALUES (1, 'api_oficial');
-
--- Sesiones Baileys (multi-línea WhatsApp)
-CREATE TABLE IF NOT EXISTS whatsapp_sessions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    session_id VARCHAR(50) NOT NULL UNIQUE,
-    nombre VARCHAR(100) NOT NULL,
-    activo TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-INSERT IGNORE INTO whatsapp_sessions (session_id, nombre, activo)
-VALUES ('default', 'Línea Principal', 1);
 
 -- Tabla de Tipos de Vehículos (catálogo)
 CREATE TABLE IF NOT EXISTS tipos_vehiculos (
@@ -221,8 +207,11 @@ ALTER TABLE asignaciones ADD COLUMN pagador_flete VARCHAR(100) NULL AFTER tipo_c
 CREATE TABLE IF NOT EXISTS vehiculos_asignados (
     id INT AUTO_INCREMENT PRIMARY KEY,
     asignacion_id INT NOT NULL,
-    placa_camion VARCHAR(20) NOT NULL,
+    placa VARCHAR(20) NOT NULL,
+    patente2 VARCHAR(20) NULL,
+    tipo_camion VARCHAR(80) NULL,
     conductor_nombre VARCHAR(100) NOT NULL,
+    cuil_conductor VARCHAR(30) NULL,
     pagador_flete VARCHAR(100) NULL,
     notificado_cliente TINYINT(1) DEFAULT 0,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -241,5 +230,58 @@ CREATE TABLE IF NOT EXISTS acciones_log (
     FOREIGN KEY (operador_id) REFERENCES administradores(id) ON DELETE SET NULL
 );
 
+-- Tabla de Control de Chats (quién tiene el control de cada conversación)
+CREATE TABLE IF NOT EXISTS chat_control (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    telefono VARCHAR(20) NOT NULL,
+    operador_id INT NOT NULL,
+    session_id VARCHAR(50) DEFAULT 'meta_api',
+    activo TINYINT(1) DEFAULT 1,
+    fecha_toma TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_liberacion TIMESTAMP NULL DEFAULT NULL,
+    FOREIGN KEY (operador_id) REFERENCES administradores(id) ON DELETE CASCADE,
+    INDEX idx_chat_control_tel_activo (telefono, activo),
+    INDEX idx_chat_control_operador (operador_id)
+);
+
+-- Tabla de Etiquetas de Contacto (tags para chats WhatsApp)
+CREATE TABLE IF NOT EXISTS contacto_etiquetas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    telefono VARCHAR(20) NOT NULL,
+    etiqueta VARCHAR(50) NOT NULL,
+    color VARCHAR(7) DEFAULT '#6c757d',
+    creado_por INT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_tel_etiqueta (telefono, etiqueta),
+    FOREIGN KEY (creado_por) REFERENCES administradores(id) ON DELETE SET NULL
+);
+
+-- Tabla de Notas Internas de Contacto
+CREATE TABLE IF NOT EXISTS contacto_notas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    telefono VARCHAR(20) NOT NULL,
+    contenido TEXT NOT NULL,
+    creado_por INT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (creado_por) REFERENCES administradores(id) ON DELETE SET NULL
+);
+
+-- Tabla de Seguimientos de Contacto
+CREATE TABLE IF NOT EXISTS contacto_seguimientos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    telefono VARCHAR(20) NOT NULL,
+    descripcion VARCHAR(255) NOT NULL,
+    fecha_programada DATETIME NOT NULL,
+    completado TINYINT(1) DEFAULT 0,
+    fecha_completado TIMESTAMP NULL DEFAULT NULL,
+    creado_por INT NULL,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (creado_por) REFERENCES administradores(id) ON DELETE SET NULL
+);
+
 -- Migraciones incrementales (idempotentes vía manejo de error en initDb.js)
 ALTER TABLE vehiculos_asignados ADD COLUMN pagador_flete VARCHAR(100) NULL AFTER conductor_nombre;
+ALTER TABLE vehiculos_asignados ADD COLUMN patente2 VARCHAR(20) NULL;
+ALTER TABLE vehiculos_asignados ADD COLUMN tipo_camion VARCHAR(80) NULL;
+ALTER TABLE vehiculos_asignados ADD COLUMN cuil_conductor VARCHAR(30) NULL;
+ALTER TABLE vehiculos_asignados MODIFY COLUMN cuil_conductor VARCHAR(30) NULL;

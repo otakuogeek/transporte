@@ -329,8 +329,8 @@ export default function Transportes() {
                                                     <thead className="table-light">
                                                         <tr>
                                                             <th>Tipo</th>
-                                                            <th className="text-center" style={{ width: 80 }}>Cantidad</th>
-                                                            <th className="text-center" style={{ width: 50 }}></th>
+                                                            <th className="text-center" style={{ minWidth: 70 }}>Cantidad</th>
+                                                            <th className="text-center" style={{ minWidth: 40 }}></th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -343,7 +343,7 @@ export default function Transportes() {
                                                                 <td className="text-center">
                                                                     <input type="number" min="1" value={v.cantidad}
                                                                         className="form-control form-control-sm text-center p-1"
-                                                                        style={{ width: 60 }}
+                                                                        style={{ width: '100%', minWidth: 55 }}
                                                                         onChange={e => actualizarCantidadVehiculo(v.relacion_id, v.tipo_vehiculo_id, e.target.value)} />
                                                                 </td>
                                                                 <td className="text-center">
@@ -371,7 +371,7 @@ export default function Transportes() {
                                                 </select>
                                             </div>
                                             <input type="number" min="1" value={nuevaCantidad} onChange={e => setNuevaCantidad(e.target.value)}
-                                                className="form-control form-control-sm text-center" style={{ width: 70 }} placeholder="Cant." />
+                                                className="form-control form-control-sm text-center" style={{ width: 70, minWidth: 55 }} placeholder="Cant." />
                                             <button onClick={agregarTipoVehiculo} disabled={!nuevoTipoId}
                                                 className={`btn btn-sm ${nuevoTipoId ? 'btn-primary' : 'btn-secondary'}`} style={{ whiteSpace: 'nowrap' }}>
                                                 + Agregar

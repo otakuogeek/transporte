@@ -81,7 +81,7 @@ export default function TiposVehiculos() {
       {/* Modal */}
       {modalOpen && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,.5)' }} onClick={() => setModalOpen(false)}>
-          <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">{editando ? 'Editar' : 'Nuevo'} Tipo de Vehículo</h5>

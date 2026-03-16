@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 // Cargar variables de entorno
 dotenv.config();
 
-// ===== PREVENIR CRASHES POR EXCEPCIONES NO CAPTURADAS (ej: Baileys) =====
+// ===== PREVENIR CRASHES POR EXCEPCIONES NO CAPTURADAS =====
 process.on('uncaughtException', (err) => {
   console.error('⚠ Excepción no capturada (el servidor continúa):', err.message);
 });
@@ -132,11 +132,19 @@ async function startServer() {
     // Inicializar almacén global de tokens
     if (!global.authTokens) global.authTokens = {};
 
-    app.listen(PORT, '127.0.0.1', () => {
+    app.listen(PORT, '127.0.0.1', async () => {
       console.log(`🚀 FALC Logística Backend corriendo en http://127.0.0.1:${PORT}`);
       console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}`);
       console.log(`   Webhook URL: http://127.0.0.1:${PORT}/webhook`);
       console.log(`   API URL: http://127.0.0.1:${PORT}/api`);
+
+      // Restaurar estados de agentes pausados desde BD
+      try {
+        const whatsappConfigController = require('./controllers/whatsappConfigController');
+        await whatsappConfigController.restoreAgentStates();
+      } catch (err) {
+        console.error('⚠ Error restaurando estados de agentes:', err.message);
+      }
     });
   } catch (error) {
     console.error('✗ Error fatal al iniciar el servidor:', error);

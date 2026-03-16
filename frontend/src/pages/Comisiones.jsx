@@ -90,7 +90,7 @@ export default function Comisiones() {
       {/* Modal detalles */}
       {modalOpen && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,.5)' }} onClick={() => setModalOpen(false)}>
-          <div className="modal-dialog modal-dialog-centered modal-xl" onClick={e => e.stopPropagation()}>
+          <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Detalles de {choferSeleccionado?.chofer_nombre}</h5>

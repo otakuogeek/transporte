@@ -141,7 +141,7 @@ export default function Usuarios() {
                                     <small className="text-muted d-block">{r.desc}</small>
                                     <div className="mt-1">
                                         {getPermisosRol(r.value).map(p => (
-                                            <span key={p} className="badge bg-light text-dark border me-1 mb-1" style={{ fontSize: '0.65rem' }}>
+                                            <span key={p} className="badge bg-light text-dark border me-1 mb-1" style={{ fontSize: '0.7rem' }}>
                                                 {PERMISOS_LABELS[p] || p}
                                             </span>
                                         ))}
@@ -218,8 +218,8 @@ export default function Usuarios() {
                                             {rolBadge(u.rol)}
                                             <div className="mt-1">
                                                 {u.activo
-                                                    ? <span className="badge rounded-pill bg-success-subtle text-success" style={{ fontSize: '0.65rem' }}>Activo</span>
-                                                    : <span className="badge rounded-pill bg-danger-subtle text-danger" style={{ fontSize: '0.65rem' }}>Inactivo</span>}
+                                                    ? <span className="badge rounded-pill bg-success-subtle text-success" style={{ fontSize: '0.7rem' }}>Activo</span>
+                                                    : <span className="badge rounded-pill bg-danger-subtle text-danger" style={{ fontSize: '0.7rem' }}>Inactivo</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -242,7 +242,7 @@ export default function Usuarios() {
             {/* Modal Crear/Editar */}
             {modalOpen && (
                 <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,.5)' }} onClick={() => setModalOpen(false)}>
-                    <div className="modal-dialog modal-dialog-centered" onClick={e => e.stopPropagation()}>
+                    <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
                         <div className="modal-content">
                             <div className="modal-header py-2">
                                 <h5 className="modal-title fs-6">{editando ? '✏️ Editar Usuario' : '➕ Nuevo Usuario'}</h5>

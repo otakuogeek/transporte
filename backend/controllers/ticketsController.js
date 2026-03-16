@@ -5,7 +5,7 @@ exports.getAll = async (req, res) => {
     try {
         const { estado, cliente_id, fecha_desde, fecha_hasta } = req.query;
         let query = `
-            SELECT t.*, c.nombre as cliente_nombre, c.origen_default as cliente_origen,
+            SELECT t.*, c.nombre as cliente_nombre, c.origen_default as cliente_origen, c.telefonos as cliente_telefono,
                    a.nombre as operador_nombre,
                    tv.nombre as tipo_vehiculo_nombre, tv.capacidad_toneladas as tipo_vehiculo_capacidad
             FROM tickets t

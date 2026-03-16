@@ -13,6 +13,9 @@ import Transportes from './pages/Transportes';
 import TiposVehiculos from './pages/TiposVehiculos';
 import Liquidaciones from './pages/Liquidaciones';
 import Usuarios from './pages/Usuarios';
+import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
+import TerminosServicio from './pages/TerminosServicio';
+import EliminacionDatos from './pages/EliminacionDatos';
 
 function ProtectedRoute({ children, permiso }) {
   const { admin, loading, tienePermiso } = useAuth();
@@ -28,6 +31,9 @@ function App() {
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
+          <Route path="/terminos-servicio" element={<TerminosServicio />} />
+          <Route path="/eliminacion-datos" element={<EliminacionDatos />} />
           <Route path="/" element={<ProtectedRoute permiso="dashboard"><Dashboard /></ProtectedRoute>} />
           <Route path="/clientes" element={<ProtectedRoute permiso="clientes"><Clientes /></ProtectedRoute>} />
           <Route path="/tickets" element={<ProtectedRoute permiso="tickets"><Tickets /></ProtectedRoute>} />

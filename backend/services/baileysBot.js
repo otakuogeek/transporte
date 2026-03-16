@@ -1,4 +1,4 @@
-// services/baileysBot.js - Bot conversacional para Baileys (estilo operadora colombiana)
+// services/baileysBot.js - Bot conversacional WhatsApp Meta Cloud API (estilo operadora colombiana)
 const pool = require('../database/connection');
 const cotizacionService = require('./cotizacionService');
 
@@ -854,7 +854,13 @@ async function procesarDatosCamionTransporte(jid, texto, conv, enviar) {
 
     // Paso 2: CUIL del chofer
     if (conv.data.cuilConductor == null) {
-        conv.data.cuilConductor = (textoLower === 'no' || textoLower === 'n' || textoLower === '-') ? '-' : texto.trim();
+        if (textoLower === 'no' || textoLower === 'n' || textoLower === '-') {
+            conv.data.cuilConductor = '-';
+        } else {
+            // Normalizar: eliminar espacios y truncar a 30 chars por seguridad
+            const cuilNorm = texto.trim().replace(/\s+/g, '').slice(0, 30);
+            conv.data.cuilConductor = cuilNorm || '-';
+        }
         await enviar(jid, `CUIL: *${conv.data.cuilConductor}* ✅\n\nEnvíame la *Patente 1* del camión (tractor/unidad):`);
         return;
     }
@@ -1055,7 +1061,7 @@ async function procesarTipoVehiculo(jid, texto, conv, enviar) {
 
     await enviar(jid,
         `¡Listo! Mira cómo quedó tu pedido 📋\n\n` +
-        `👤 *${conv.data.clienteNombre}*\n` +
+        `👤 *${conv.data.clienteNombre}* (${conv.data.telefonoRegistro || conv.data.telefono})\n` +
         `📍 De: *${conv.data.origen}*\n` +
         `📍 A: *${conv.data.destino || '(por definir)'}*\n` +
         `📅 Fecha: *${conv.data.fecha}*\n` +
@@ -1112,11 +1118,12 @@ async function procesarConfirmacion(jid, texto, conv, enviar) {
                 `🔢 Camiones: *${conv.data.cantidadCamiones || 1}*\n` +
                 tipoLineaConf +
                 `\nNuestro equipo ya está buscando transportes para ti 💪\n` +
-                `Te avisamos apenas tengamos novedades, ¡quédate tranqui! 😊`
+                `Te avisamos apenas tengamos novedades, ¡quédate tranqui! 😊\n\n` +
+                `¿Te gustaría registrar otro viaje? Escríbeme *1* para un nuevo pedido 🚛`
             );
 
-            // Registrar log
-            await registrarMensaje(jid.replace(/@s\.whatsapp\.net$/, '').replace(/@lid$/, ''), JSON.stringify(conv.data), 'sistema', 'ticket_creado', ticketId);
+            // Deshabilitar el ticketId aca temporalmente para evitar el error de foreign key con `solicitud_id`
+            await registrarMensaje(jid.replace(/@s\.whatsapp\.net$/, '').replace(/@lid$/, ''), JSON.stringify(conv.data), 'sistema', 'ticket_creado', null);
 
             // NO hay cotización automática — el operador asigna manualmente desde el panel
 
@@ -1328,13 +1335,14 @@ async function procesarConfirmacionViaje(jid, texto, conv, enviar) {
                     `👤 *${s.chofer_nombre}*\n` +
                     `📱 *+${s.chofer_tel}*\n\n` +
                     `Ya puedes contactarlo para coordinar los detalles del viaje 🚛\n\n` +
-                    `¡Gracias por confiar en FALC! 💚 Si necesitas algo más, escríbeme *menú*`
+                    `¡Gracias por confiar en FALC! 💚\n\n` +
+                    `¿Te gustaría registrar otro viaje? Escríbeme *1* para un nuevo pedido 🚛`
                 );
 
                 // Enviar datos del cliente AL CHOFER
-                const baileysService = require('./baileysService');
+                const whatsappService = require('./whatsappService');
                 try {
-                    await baileysService.sendMessage(s.chofer_tel,
+                    await whatsappService.sendTextMessage(s.chofer_tel,
                         `¡${s.chofer_nombre}! 🎉 Te asignaron la ruta\n\n` +
                         `📋 Solicitud *#${solicitudId}*\n` +
                         `📍 ${s.origen} → ${s.destino}\n` +
@@ -1355,14 +1363,16 @@ async function procesarConfirmacionViaje(jid, texto, conv, enviar) {
                 await enviar(jid,
                     `¡Queda confirmado! 🎉\n\n` +
                     `Solicitud #${solicitudId} contratada.\n` +
-                    `Te aviso en un ratico con los datos del chofer 🚛\n\n¡Gracias! 💚`
+                    `Te aviso en un ratico con los datos del chofer 🚛\n\n¡Gracias! 💚\n\n` +
+                    `¿Te gustaría registrar otro viaje? Escríbeme *1* para un nuevo pedido 🚛`
                 );
             }
         } else {
             await pool.query("UPDATE solicitudes SET estado = 'Rechazada' WHERE id = ?", [solicitudId]);
             await enviar(jid,
                 `Listo, solicitud #${solicitudId} cancelada ❌\n\n` +
-                `Cuando necesites algo, aquí estoy 😊`
+                `Cuando necesites algo, aquí estoy 😊\n\n` +
+                `¿Te gustaría registrar otro viaje? Escríbeme *1* para un nuevo pedido 🚛`
             );
         }
     } catch (error) {
@@ -1389,20 +1399,20 @@ function parsearFecha(texto) {
     const hoy = new Date();
     const anioActual = hoy.getFullYear();
 
-    // "hoy"
-    if (t === 'hoy') {
+    // "hoy" (contiene "hoy")
+    if (/\bhoy\b/.test(t)) {
         return formatFecha(hoy);
     }
-    // "mañana"
-    if (t === 'mañana' || t === 'manana') {
-        const d = new Date(hoy);
-        d.setDate(d.getDate() + 1);
-        return formatFecha(d);
-    }
-    // "pasado mañana"
-    if (t === 'pasado mañana' || t === 'pasado manana') {
+    // "pasado mañana" - debe revisarse antes que "mañana"
+    if (/\bpasado\s*(?:mañana|manana)\b/.test(t)) {
         const d = new Date(hoy);
         d.setDate(d.getDate() + 2);
+        return formatFecha(d);
+    }
+    // "mañana" (contiene "mañana")
+    if (/\b(?:mañana|manana)\b/.test(t)) {
+        const d = new Date(hoy);
+        d.setDate(d.getDate() + 1);
         return formatFecha(d);
     }
 
@@ -1412,7 +1422,7 @@ function parsearFecha(texto) {
         'jueves': 4, 'viernes': 5, 'sábado': 6, 'sabado': 6, 'domingo': 0
     };
     for (const [dia, num] of Object.entries(dias)) {
-        if (t.includes(dia)) {
+        if (new RegExp(`\\b${dia}\\b`).test(t)) {
             const d = new Date(hoy);
             const diaActual = d.getDay();
             let diff = num - diaActual;
@@ -1468,7 +1478,7 @@ function parsearFecha(texto) {
     }
 
     // DD/MM o DD-MM (sin año → año actual)
-    const matchSinAnio = texto.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
+    const matchSinAnio = texto.match(/(?:para\s+el\s+|el\s+)?(\d{1,2})[\/\-\.](\d{1,2})/);
     if (matchSinAnio) {
         const dia = parseInt(matchSinAnio[1]);
         const mes = parseInt(matchSinAnio[2]) - 1;
@@ -1477,8 +1487,8 @@ function parsearFecha(texto) {
         }
     }
 
-    // Solo un número → interpretar como día del mes actual o siguiente
-    const matchSoloDia = texto.match(/^(\d{1,2})$/);
+    // Solo un número de día: "15", "el 15", "para el 15"
+    const matchSoloDia = t.match(/^(?:para\s+)?(?:el\s+)?(\d{1,2})$/);
     if (matchSoloDia) {
         const dia = parseInt(matchSoloDia[1]);
         if (dia >= 1 && dia <= 31) {
@@ -1655,7 +1665,7 @@ async function procesarMensajeCompleto(telefono, texto, remoteJid, enviar, sessi
                 await saludar(jid, conversaciones[key], enviar);
         }
     } catch (error) {
-        console.error('✗ Error en bot Baileys:', error.message);
+        console.error('✗ Error en bot WhatsApp:', error.message);
         await enviar(jid, 'Uy, algo se me complicó por acá 😅 ¿Me escribes *menú* para empezar de nuevo?');
     }
 }

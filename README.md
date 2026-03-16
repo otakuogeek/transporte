@@ -11,7 +11,7 @@ Sistema web completo para gestión de logística de transporte de carga, con int
 - **Tickets de Transporte** — flujo completo desde solicitud hasta entrega
 - **Cotizaciones** — sistema de cotización automática a choferes disponibles
 - **Comisiones** — cálculo de ganancia sobre las cotizaciones
-- **Integración WhatsApp** — soporte dual: API Oficial de Meta y Baileys (WhatsApp Web)
+- **Integración WhatsApp** — API Oficial de Meta (WhatsApp Cloud API)
 - **IA conversacional** — procesamiento inteligente de mensajes entrantes
 - **Panel de administración** — autenticación, configuración y monitoreo
 
@@ -20,7 +20,7 @@ Sistema web completo para gestión de logística de transporte de carga, con int
 ### Backend
 - **Node.js** + **Express 5**
 - **MySQL** (mysql2)
-- **WhatsApp**: API Oficial de Meta / Baileys (WhatsApp Web)
+- **WhatsApp**: API Oficial de Meta (WhatsApp Cloud API)
 - **PM2** para gestión de procesos en producción
 
 ### Frontend
@@ -58,10 +58,10 @@ Sistema web completo para gestión de logística de transporte de carga, con int
 │   │   └── comisionesRoutes.js
 │   ├── services/
 │   │   ├── aiService.js       # Servicio de IA
-│   │   ├── baileysBot.js      # Bot WhatsApp Web
-│   │   ├── baileysService.js  # Servicio Baileys
+│   │   ├── baileysBot.js      # Bot conversacional WhatsApp
 │   │   ├── cotizacionService.js
-│   │   └── whatsappService.js
+│   │   ├── whatsappConfigService.js  # Resolución config WhatsApp
+│   │   └── whatsappService.js # Envío vía Meta Cloud API
 │   └── database/
 │       ├── connection.js      # Pool de conexiones MySQL
 │       ├── initDb.js          # Inicialización automática

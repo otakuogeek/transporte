@@ -132,7 +132,7 @@ export default function Login() {
         <div className="col-lg-7 d-none d-lg-flex position-relative overflow-hidden"
           style={{ background: '#0f3460' }}>
           <div className="position-absolute top-0 start-0 w-100 h-100"
-            style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=1400&q=80)',
+            style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=900&q=70)',
               backgroundSize: 'cover', backgroundPosition: 'center' }} />
           <div className="position-absolute top-0 start-0 w-100 h-100"
             style={{ background: 'linear-gradient(135deg, rgba(15,52,96,0.7), rgba(26,26,46,0.5))' }} />

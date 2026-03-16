@@ -45,7 +45,7 @@ export default function Solicitudes() {
       {/* Modal detalle */}
       {detalle && (
         <div className="modal show d-block" style={{ background: 'rgba(0,0,0,.5)' }} onClick={() => setDetalle(null)}>
-          <div className="modal-dialog modal-dialog-centered modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" onClick={e => e.stopPropagation()}>
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Solicitud #{detalle.id}</h5>
@@ -54,14 +54,14 @@ export default function Solicitudes() {
               </div>
               <div className="modal-body">
                 <div className="row g-2 mb-3 small">
-                  <div className="col-6"><strong>Cliente:</strong> {detalle.cliente_nombre} {detalle.cliente_apellidos || ''}</div>
-                  <div className="col-6"><strong>Teléfono:</strong> {detalle.cliente_telefono || '-'}</div>
-                  <div className="col-6"><strong>Origen:</strong> {detalle.origen}</div>
-                  <div className="col-6"><strong>Destino:</strong> {detalle.destino}</div>
-                  <div className="col-6"><strong>Fecha Carga:</strong> {new Date(detalle.fecha_carga).toLocaleDateString('es-PE')}</div>
-                  <div className="col-6"><strong>Tipo Vehículo:</strong> {detalle.tipo_vehiculo_requerido}</div>
-                  <div className="col-6"><strong>Chofer:</strong> {detalle.chofer_nombre || '-'}</div>
-                  <div className="col-6"><strong>Precio:</strong> {detalle.precio_final_cliente ? `$${detalle.precio_final_cliente}` : '-'}</div>
+                  <div className="col-12 col-sm-6"><strong>Cliente:</strong> {detalle.cliente_nombre} {detalle.cliente_apellidos || ''}</div>
+                  <div className="col-12 col-sm-6"><strong>Teléfono:</strong> {detalle.cliente_telefono || '-'}</div>
+                  <div className="col-12 col-sm-6"><strong>Origen:</strong> {detalle.origen}</div>
+                  <div className="col-12 col-sm-6"><strong>Destino:</strong> {detalle.destino}</div>
+                  <div className="col-12 col-sm-6"><strong>Fecha Carga:</strong> {new Date(detalle.fecha_carga).toLocaleDateString('es-PE')}</div>
+                  <div className="col-12 col-sm-6"><strong>Tipo Vehículo:</strong> {detalle.tipo_vehiculo_requerido}</div>
+                  <div className="col-12 col-sm-6"><strong>Chofer:</strong> {detalle.chofer_nombre || '-'}</div>
+                  <div className="col-12 col-sm-6"><strong>Precio:</strong> {detalle.precio_final_cliente ? `$${detalle.precio_final_cliente}` : '-'}</div>
                 </div>
 
                 {detalle.cotizaciones?.length > 0 && (

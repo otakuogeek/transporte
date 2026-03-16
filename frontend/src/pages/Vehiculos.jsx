@@ -89,7 +89,7 @@ export default function Vehiculos() {
                     {choferes.map(ch => <option key={ch.id} value={ch.id}>{ch.nombre}</option>)}
                   </select>
                 </div>
-                <div className="col-md-1 d-flex align-items-end gap-1">
+                <div className="col-12 col-md-1 d-flex align-items-end gap-1 mt-2 mt-md-0">
                   <button type="submit" className="btn btn-falc btn-sm">Guardar</button>
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowForm(false)}>✕</button>
                 </div>

@@ -44,30 +44,55 @@ exports.asignar = async (req, res) => {
                      FROM tickets t JOIN clientes c ON t.cliente_id = c.id WHERE t.id = ?`, [ticket_id]
                 );
                 if (tr.length > 0 && tr[0].telefono_whatsapp && tk.length > 0) {
-                    const baileysService = require('../services/baileysService');
+                    const whatsappService = require('../services/whatsappService');
                     const fecha = new Date(tk[0].fecha_requerida).toLocaleDateString('es-CO');
-                    const cantMsg = a.cantidad_camiones;
-                    const precioMsg = a.precio ? `\n💲 Precio acordado: *$${parseFloat(a.precio).toLocaleString('es-AR')}*` : '';
-                    let msgAceptar;
-                    if (cantMsg > 1) {
-                        msgAceptar = `¿Cuántos camiones aceptas?\n` +
-                            `✅ Escribe *sí* para aceptar los ${cantMsg}\n` +
-                            `🔢 O un número si aceptas menos (ej: *${cantMsg - 1}*)\n` +
-                            `❌ Escribe *no* para rechazar`;
-                    } else {
-                        msgAceptar = `¿Aceptas este pedido?\n✅ Escribe *sí* para aceptar\n❌ Escribe *no* para rechazar`;
-                    }
-                    await baileysService.sendMessage(tr[0].telefono_whatsapp,
-                        `¡Hola, *${tr[0].nombre}*! 🚛 Hay un nuevo pedido de carga:\n\n` +
-                        `📍 Origen: *${tk[0].origen}*\n` +
-                        `📍 Destino: *${tk[0].destino || '—'}*\n` +
-                        `📅 Fecha: *${fecha}*\n` +
-                        `🚛 Camiones solicitados: *${cantMsg}*\n` +
-                        `👤 Cliente: *${tk[0].cliente_nombre}*` +
-                        precioMsg +
-                        `\n\n` +
-                        msgAceptar
+                    const cant = a.cantidad_camiones || 1;
+                    const cantMsg = String(cant);
+
+                    // Verificar si la ventana de 24 h está activa (último msg entrante del transporte)
+                    const [ultimoEntrante] = await pool.query(
+                        `SELECT fecha FROM mensajes_log
+                         WHERE telefono = ? AND direccion = 'entrante'
+                         ORDER BY fecha DESC LIMIT 1`,
+                        [tr[0].telefono_whatsapp]
                     );
+                    const ventanaActiva = ultimoEntrante.length > 0 &&
+                        (Date.now() - new Date(ultimoEntrante[0].fecha).getTime()) < 24 * 60 * 60 * 1000;
+
+                    if (ventanaActiva) {
+                        // Ventana abierta → texto libre (sin costo de plantilla)
+                        const msgAceptar = cant > 1
+                            ? `¿Cuántos camiones aceptas?\n✅ Escribe *sí* para aceptar los ${cant}\n🔢 O un número si aceptas menos (ej: *${cant - 1}*)\n❌ Escribe *no* para rechazar`
+                            : `¿Aceptas este pedido?\n✅ Escribe *sí* para aceptar\n❌ Escribe *no* para rechazar`;
+
+                        await whatsappService.sendTextMessage(
+                            tr[0].telefono_whatsapp,
+                            `¡Hola, *${tr[0].nombre}*! 🚛 Nuevo pedido de carga:\n\n` +
+                            `📍 Origen: *${tk[0].origen}*\n` +
+                            `📍 Destino: *${tk[0].destino || 'Por confirmar'}*\n` +
+                            `📅 Fecha: *${fecha}*\n` +
+                            `🚛 Camiones solicitados: *${cantMsg}*\n` +
+                            `👤 Cliente: *${tk[0].cliente_nombre}*\n\n` +
+                            msgAceptar
+                        );
+                        console.log(`✓ [ventana abierta] Texto libre a ${tr[0].telefono_whatsapp}`);
+                    } else {
+                        // Ventana cerrada o sin historial → plantilla aprobada
+                        await whatsappService.sendTemplateMessage(
+                            tr[0].telefono_whatsapp,
+                            'nueva_asignacion_viaje',
+                            'es_AR',
+                            [
+                                tr[0].nombre,
+                                tk[0].origen,
+                                tk[0].destino || 'Por confirmar',
+                                fecha,
+                                cantMsg,
+                                tk[0].cliente_nombre,
+                            ]
+                        );
+                        console.log(`✓ [plantilla] nueva_asignacion_viaje a ${tr[0].telefono_whatsapp}`);
+                    }
                 }
             } catch (msgErr) {
                 console.error('Error enviando WA a transporte:', msgErr.message);
@@ -266,10 +291,10 @@ exports.notificarClienteVehiculo = async (req, res) => {
         }
 
         // Enviar mensaje WhatsApp al cliente
-        const baileysService = require('../services/baileysService');
+        const whatsappService = require('../services/whatsappService');
         const fecha = new Date(data.fecha_requerida).toLocaleDateString('es-CO');
 
-        await baileysService.sendMessage(telefonoCliente,
+        await whatsappService.sendTextMessage(telefonoCliente,
             `¡Hola, *${data.cliente_nombre}*! 👋\n\n` +
             `Te confirmamos los datos del camión asignado para tu pedido:\n\n` +
             `🚛 *Placa:* ${data.placa}\n` +

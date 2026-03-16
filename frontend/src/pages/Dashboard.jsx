@@ -18,10 +18,10 @@ const BarChart = ({ data, label, valueKey, nameKey, color }) => {
       <h6 className="fw-semibold mb-3">{label}</h6>
       {data.map((d, i) => (
         <div key={i} className="d-flex align-items-center gap-2 mb-1">
-          <div className="text-end text-muted small text-truncate" style={{ width: 120 }}>{d[nameKey]}</div>
+          <div className="text-end text-muted small text-truncate" style={{ width: 110, minWidth: 60, flexShrink: 0 }}>{d[nameKey]}</div>
           <div className="flex-grow-1 rounded overflow-hidden" style={{ background: '#f0f0f0', height: 22 }}>
             <div className="h-100 rounded d-flex align-items-center justify-content-end pe-1"
-              style={{ width: `${(d[valueKey] / max) * 100}%`, background: color || '#1976d2', minWidth: d[valueKey] > 0 ? 20 : 0, fontSize: 11, color: '#fff', fontWeight: 'bold', transition: 'width 0.4s' }}>
+              style={{ width: `${(d[valueKey] / max) * 100}%`, background: color || '#1976d2', minWidth: d[valueKey] > 0 ? 20 : 0, fontSize: 12, color: '#fff', fontWeight: 'bold', transition: 'width 0.4s' }}>
               {d[valueKey]}
             </div>
           </div>

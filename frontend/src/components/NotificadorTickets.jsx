@@ -79,7 +79,7 @@ export default function NotificadorTickets() {
                     background: '#1b5e20', color: '#fff',
                     padding: '14px 18px', borderRadius: 10,
                     boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
-                    cursor: 'pointer', minWidth: 290, maxWidth: 360,
+                    cursor: 'pointer', minWidth: 'min(290px, calc(100vw - 40px))', maxWidth: 360,
                 }}
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>

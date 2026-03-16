@@ -1,13 +1,13 @@
-// services/cotizacionService.js - Lógica de cotización y selección automática (Baileys)
+// services/cotizacionService.js - Lógica de cotización y selección automática (WhatsApp)
 const pool = require('../database/connection');
 
 /**
  * Busca choferes disponibles con el tipo de vehículo requerido
- * y les envía solicitud de cotización por WhatsApp (Baileys)
+ * y les envía solicitud de cotización por WhatsApp (Meta Cloud API)
  * Guarda la cantidad de choferes contactados en la solicitud.
  */
 async function solicitarCotizacionesAChoferesBaileys(solicitudId) {
-  const baileysService = require('./baileysService');
+  const whatsappService = require('./whatsappService');
 
   try {
     const [solicitudes] = await pool.query(
@@ -59,7 +59,7 @@ async function solicitarCotizacionesAChoferesBaileys(solicitudId) {
         `¡Quedo atenta! 😊`;
 
       try {
-        await baileysService.sendMessage(chofer.telefono_whatsapp, mensaje);
+        await whatsappService.sendTextMessage(chofer.telefono_whatsapp, mensaje);
         await pool.query(
           `INSERT INTO mensajes_log (telefono, direccion, contenido, contexto, solicitud_id)
            VALUES (?, 'saliente', ?, 'solicitud_cotizacion', ?)`,
@@ -90,7 +90,7 @@ async function solicitarCotizacionesAChoferesBaileys(solicitudId) {
     console.log(`✓ Cotización solicitada a ${contactados} chofer(es) para solicitud #${solicitudId}`);
     return { choferes_contactados: contactados, choferes };
   } catch (error) {
-    console.error('✗ Error solicitando cotizaciones Baileys:', error.message);
+    console.error('✗ Error solicitando cotizaciones WhatsApp:', error.message);
     throw error;
   }
 }
@@ -157,13 +157,13 @@ async function verificarCotizacionesCompletas(solicitudId) {
 }
 
 /**
- * Selecciona la mejor cotización y notifica al cliente vía Baileys.
+ * Selecciona la mejor cotización y notifica al cliente vía WhatsApp.
  * Menor precio gana. En empate, gana la primera en llegar.
  * Calcula precio_cliente = precio_chofer + margen_ganancia%.
  * Notifica al cliente con el precio y al chofer que ganó.
  */
 async function seleccionarMejorCotizacionBaileys(solicitudId) {
-  const baileysService = require('./baileysService');
+  const whatsappService = require('./whatsappService');
 
   try {
     // Obtener cotizaciones ordenadas por precio (menor primero)
@@ -187,7 +187,7 @@ async function seleccionarMejorCotizacionBaileys(solicitudId) {
       );
       if (solData.length > 0) {
         try {
-          await baileysService.sendMessage(
+          await whatsappService.sendTextMessage(
             solData[0].telefono_whatsapp,
             `Oye, lamentablemente no recibí cotizaciones de los choferes para tu solicitud #${solicitudId} 😔\n\n` +
             `¿Quieres que volvamos a intentar? Escríbeme *menú* para crear una nueva solicitud 😊`
@@ -255,7 +255,7 @@ async function seleccionarMejorCotizacionBaileys(solicitudId) {
         `¿Lo tomamos? Escríbeme *sí* para contratar o *no* si prefieres dejarlo 😊`;
 
       try {
-        await baileysService.sendMessage(sol.cliente_telefono, mensajeCliente);
+        await whatsappService.sendTextMessage(sol.cliente_telefono, mensajeCliente);
         console.log(`✓ Cotización enviada al cliente ${sol.cliente_nombre} para solicitud #${solicitudId}`);
 
         // Actualizar estado de conversación del cliente para esperar su respuesta

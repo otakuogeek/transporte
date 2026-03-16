@@ -363,19 +363,19 @@ export default function Liquidaciones() {
                                     <>
                                         {/* Summary row */}
                                         <div className="row g-2 mb-3">
-                                            <div className="col-4">
+                                            <div className="col-6 col-md-4">
                                                 <div className="bg-light rounded p-2 text-center">
                                                     <small className="text-muted d-block">Total Facturas</small>
                                                     <strong>{fmtMoney(detalleAsignaciones.reduce((s, a) => s + parseFloat(a.total_precio || 0), 0))}</strong>
                                                 </div>
                                             </div>
-                                            <div className="col-4">
+                                            <div className="col-6 col-md-4">
                                                 <div className="bg-success bg-opacity-10 rounded p-2 text-center">
                                                     <small className="text-muted d-block">Total Comisión</small>
                                                     <strong className="text-success">{fmtMoney(detalleAsignaciones.reduce((s, a) => s + parseFloat(a.total_comision || 0), 0))}</strong>
                                                 </div>
                                             </div>
-                                            <div className="col-4">
+                                            <div className="col-12 col-md-4">
                                                 <div className="bg-danger bg-opacity-10 rounded p-2 text-center">
                                                     <small className="text-muted d-block">Total Neto</small>
                                                     <strong className="text-danger">{fmtMoney(detalleAsignaciones.reduce((s, a) => s + parseFloat(a.total_neto || 0), 0))}</strong>
@@ -534,7 +534,7 @@ export default function Liquidaciones() {
                                         </div>
 
                                         <div className="table-responsive">
-                                            <table className="table table-sm table-hover align-middle mb-0" style={{ fontSize: '0.75rem' }}>
+                                            <table className="table table-sm table-hover align-middle mb-0" style={{ fontSize: '0.8rem' }}>
                                                 <thead className="table-light">
                                                     <tr>
                                                         <th>#</th>

@@ -22,7 +22,7 @@
 - **Sistema de Asignaciones** — asignar transportes a tickets con cantidad de camiones, aceptar/rechazar parcialmente
 - **Cotizaciones (legacy)** — sistema de cotización automática vía WhatsApp
 - **Comisiones** — cálculo de ganancia sobre las cotizaciones (sistema legacy)
-- **Bot conversacional WhatsApp (Baileys)** — operadora virtual estilo colombiano
+- **Bot conversacional WhatsApp (Meta Cloud API)** — operadora virtual estilo colombiano
 - **Chat con operador** — posibilidad de pausar el bot y conversar manualmente
 - **Panel de administración** — autenticación, configuración y monitoreo
 
@@ -37,9 +37,7 @@
 | Express | 5.x | Framework HTTP |
 | MySQL | — | Base de datos relacional |
 | mysql2/promise | 3.x | Driver MySQL con pool de conexiones |
-| @whiskeysockets/baileys | 7.x | Conexión WhatsApp Web (bot) |
-| axios | 1.x | Llamadas HTTP (OpenAI, WhatsApp API) |
-| qrcode | 1.x | Generación de QR para Baileys |
+| axios | 1.x | Llamadas HTTP (OpenAI, WhatsApp Cloud API) |
 | dotenv | 17.x | Variables de entorno |
 | PM2 | — | Gestión de procesos en producción |
 
@@ -93,14 +91,13 @@
 │   ├── services/
 │   │   ├── aiService.js          # Integración OpenAI (extracción NLP)
 │   │   ├── baileysBot.js         # Bot conversacional WhatsApp (~1500 líneas)
-│   │   ├── baileysService.js     # Conexión Baileys (QR, envío, reconexión)
 │   │   ├── cotizacionService.js  # Lógica de cotización automática
+│   │   ├── whatsappConfigService.js # Resolución de config WhatsApp (BD/env)
 │   │   └── whatsappService.js    # Envío vía WhatsApp Cloud API (Meta)
 │   ├── database/
 │   │   ├── connection.js         # Pool de conexiones MySQL
 │   │   ├── initDb.js             # Inicialización automática de tablas
 │   │   └── schema.sql            # Esquema DDL de la base de datos
-│   └── baileys_auth/             # Datos de sesión WhatsApp (IGNORAR en git)
 │
 └── frontend/
     ├── index.html
@@ -142,7 +139,7 @@
 ### 4.1 Diagrama de flujo principal
 
 ```
-Cliente WhatsApp ──→ Baileys/Meta ──→ baileysService ──→ baileysBot
+Cliente WhatsApp ──→ Meta Cloud API ──→ webhook ──→ baileysBot
                                                            │
                                                 ┌──────────┴──────────┐
                                                 │                     │
@@ -156,24 +153,17 @@ Cliente WhatsApp ──→ Baileys/Meta ──→ baileysService ──→ baile
 
 Panel Admin (React) ──→ Axios ──→ /api/* ──→ controllers ──→ pool (MySQL)
                                                      │
-                                              baileysService
+                                              whatsappService
                                         (envío WA desde panel)
 ```
 
-### 4.2 Sistema de conexión WhatsApp (dual)
+### 4.2 Conexión WhatsApp (Meta Cloud API)
 
-El sistema soporta dos modos de conexión a WhatsApp:
-
-1. **Baileys (WhatsApp Web)** — Modo principal actual
-   - Conexión mediante escaneo de QR desde el panel
-   - Auto-reconexión con backoff (hasta 5 intentos)
-   - Auto-conexión al reiniciar PM2 si existe sesión previa
-   - Sesión almacenada en `backend/baileys_auth/`
-   - Soporte de LID (Linked ID) con autocorrección a número real
-
-2. **API Oficial de Meta (WhatsApp Cloud API)** — Modo alternativo
-   - Webhook en `/webhook` (GET: verificación, POST: mensajes)
-   - Requiere `WA_PHONE_NUMBER_ID`, `WA_ACCESS_TOKEN`, `WA_VERIFY_TOKEN`
+El sistema usa exclusivamente la **API Oficial de Meta (WhatsApp Cloud API)**:
+- Webhook en `/webhook` (GET: verificación, POST: mensajes entrantes)
+- Envío de mensajes vía Graph API (`graph.facebook.com`)
+- Requiere `WA_PHONE_NUMBER_ID`, `WA_ACCESS_TOKEN`, `WA_VERIFY_TOKEN`
+- Configuración almacenada en BD (tabla `whatsapp_config`) o variables de entorno
 
 ### 4.3 Flujo del Ticket (sistema actual)
 
@@ -253,7 +243,7 @@ El bot gestiona conversaciones en memoria con máquina de estados:
 | `acciones_log` | Auditoría de acciones del sistema |
 | `administradores` | Usuarios del panel admin |
 | `configuracion` | Parámetros clave-valor del sistema |
-| `whatsapp_config` | Configuración de modo WhatsApp (Baileys/API) |
+| `whatsapp_config` | Configuración de WhatsApp Cloud API (credenciales Meta) |
 | `mensajes_log` | Log de todos los mensajes WhatsApp |
 
 ### Tablas legacy (aún presentes)
@@ -328,10 +318,8 @@ Todas las rutas bajo `/api/*` requieren autenticación Bearer token (excepto log
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/api/whatsapp-config` | Config actual |
-| PUT | `/api/whatsapp-config` | Guardar config (modo, tokens) |
-| POST | `/api/whatsapp-config/baileys/connect` | Conectar Baileys (genera QR) |
-| POST | `/api/whatsapp-config/baileys/disconnect` | Desconectar Baileys |
-| GET | `/api/whatsapp-config/baileys/status` | Estado de conexión |
+| PUT | `/api/whatsapp-config` | Guardar config (tokens Meta) |
+| GET | `/api/whatsapp-config/status` | Estado de conexión |
 | GET | `/api/whatsapp-config/chats` | Lista de chats |
 | GET | `/api/whatsapp-config/chats/:phone` | Mensajes de un chat |
 | POST | `/api/whatsapp-config/chats/:phone/send` | Enviar mensaje manual |
@@ -395,9 +383,8 @@ AUTH_SALT=<salt_secreto>
 - **Solo responde a mensajes individuales** (ignora grupos y status@broadcast)
 - **Ignora mensajes propios** (`fromMe`)
 - **Ignora mensajes antiguos** (>60 segundos después del timestamp)
-- **Espera 8 segundos** después de conectar para habilitar el bot (evita reprocessar history sync)
-- **Reconexión automática** hasta 5 intentos con backoff exponencial
-- **Autocorrección de LID:** si detecta un LID con número real alternativo, actualiza la BD
+- **Mensajes llegan vía webhook** de Meta Cloud API (`/webhook`)
+- **Envío vía Graph API** de Meta (`whatsappService.sendTextMessage`)
 - **Conversaciones en memoria** con limpieza cada 15 minutos (timeout de 30 min)
 - **Pausar agente:** un operador puede desactivar el bot para un teléfono específico
 
@@ -616,8 +603,7 @@ mysql -u admin -p indielab_pro
 3. **No cambiar la estructura de carpetas** sin justificación
 4. **Queries siempre parametrizadas** — NUNCA interpolar variables en SQL
 5. **Probar queries complejas** antes de integrar
-6. **No modificar `baileys_auth/`** — es estado de sesión, no código
-7. **No commitear `.env`** ni API keys
+6. **No commitear `.env`** ni API keys
 8. **Al agregar una ruta nueva:** agregar en `routes/api.js` respetando el patrón
 9. **Al agregar un controlador nuevo:** crear en `controllers/` con el patrón estándar
 10. **Al modificar schema.sql:** asegurar idempotencia con `IF NOT EXISTS`

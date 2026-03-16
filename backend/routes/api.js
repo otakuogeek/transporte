@@ -123,6 +123,7 @@ router.get('/asignaciones/historial', asignacionesController.historialPorTranspo
 
 // ===== WhatsApp Config =====
 const whatsappConfigController = require('../controllers/whatsappConfigController');
+const contactInfoController = require('../controllers/contactInfoController');
 
 // ===== Liquidaciones (Comisiones y Pagos a Transportistas) =====
 router.get('/liquidaciones/resumen', liquidacionesController.getResumen);
@@ -135,15 +136,24 @@ router.put('/liquidaciones/transporte/:transporteId/pagar-todo', liquidacionesCo
 
 router.get('/whatsapp-config', whatsappConfigController.getConfig);
 router.put('/whatsapp-config', whatsappConfigController.updateConfig);
-router.get('/whatsapp-config/baileys/sessions', whatsappConfigController.listBaileysSessions);
-router.post('/whatsapp-config/baileys/sessions', whatsappConfigController.createBaileysSession);
-router.delete('/whatsapp-config/baileys/sessions/:sessionId', whatsappConfigController.deleteBaileysSession);
-router.post('/whatsapp-config/baileys/connect', whatsappConfigController.baileysConnect);
-router.post('/whatsapp-config/baileys/disconnect', whatsappConfigController.baileysDisconnect);
-router.get('/whatsapp-config/baileys/status', whatsappConfigController.baileysStatus);
+router.get('/whatsapp-config/status', whatsappConfigController.getConnectionStatus);
 router.get('/whatsapp-config/chats', whatsappConfigController.getChats);
 router.get('/whatsapp-config/chats/:phone', whatsappConfigController.getChatMessages);
 router.post('/whatsapp-config/chats/:phone/send', whatsappConfigController.sendChatMessage);
 router.post('/whatsapp-config/chats/:phone/toggle-agent', whatsappConfigController.toggleAgent);
+router.get('/whatsapp-config/chats/:phone/control-history', whatsappConfigController.getChatControlHistory);
+
+// ===== Info de Contacto (panel lateral WhatsApp) =====
+router.get('/contacto/:phone/info', contactInfoController.getContactInfo);
+router.get('/contacto/:phone/etiquetas', contactInfoController.getEtiquetas);
+router.post('/contacto/:phone/etiquetas', contactInfoController.addEtiqueta);
+router.delete('/contacto/etiquetas/:id', contactInfoController.removeEtiqueta);
+router.get('/contacto/:phone/notas', contactInfoController.getNotas);
+router.post('/contacto/:phone/notas', contactInfoController.addNota);
+router.delete('/contacto/notas/:id', contactInfoController.removeNota);
+router.get('/contacto/:phone/seguimientos', contactInfoController.getSeguimientos);
+router.post('/contacto/:phone/seguimientos', contactInfoController.addSeguimiento);
+router.put('/contacto/seguimientos/:id/toggle', contactInfoController.toggleSeguimiento);
+router.delete('/contacto/seguimientos/:id', contactInfoController.removeSeguimiento);
 
 module.exports = router;

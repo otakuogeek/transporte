@@ -298,7 +298,19 @@ export default function Tickets() {
                                     </div>
 
                                     {/* Cliente */}
-                                    <div className="fw-semibold mb-2" style={{ fontSize: 15 }}>{t.cliente_nombre}</div>
+                                    <div className="fw-semibold mb-2" style={{ fontSize: 15 }}>
+                                        {t.cliente_nombre}
+                                        {t.cliente_telefono && (
+                                            <span className="text-muted ms-2 fw-normal" style={{ fontSize: 12 }}>
+                                                {(() => {
+                                                    try {
+                                                        const tel = typeof t.cliente_telefono === 'string' && t.cliente_telefono.startsWith('[') ? JSON.parse(t.cliente_telefono)[0] : t.cliente_telefono;
+                                                        return tel ? `(${tel})` : '';
+                                                    } catch (e) { return `(${t.cliente_telefono})`; }
+                                                })()}
+                                            </span>
+                                        )}
+                                    </div>
 
                                     {/* Ruta */}
                                     <div className="d-flex align-items-center gap-1 mb-2 small text-muted">
@@ -353,21 +365,21 @@ export default function Tickets() {
                                     </select>
                                 </div>
                                 <div className="row g-3 mb-3">
-                                    <div className="col-6">
+                                    <div className="col-12 col-sm-6">
                                         <label className="form-label fw-semibold small">Origen (Finca)</label>
                                         <input className="form-control" value={formTicket.origen} onChange={e => setFormTicket({ ...formTicket, origen: e.target.value })} />
                                     </div>
-                                    <div className="col-6">
+                                    <div className="col-12 col-sm-6">
                                         <label className="form-label fw-semibold small">Destino {destinoUnico && <span className="text-muted" style={{ fontSize: 11 }}>(config)</span>}</label>
                                         <input className={`form-control ${destinoUnico ? 'bg-light' : ''}`} value={destinoUnico || formTicket.destino} disabled={!!destinoUnico} onChange={e => setFormTicket({ ...formTicket, destino: e.target.value })} />
                                     </div>
                                 </div>
                                 <div className="row g-3 mb-3">
-                                    <div className="col-6">
+                                    <div className="col-12 col-sm-6">
                                         <label className="form-label fw-semibold small">Cantidad Camiones *</label>
                                         <input type="number" min="1" className="form-control" value={formTicket.cantidad_camiones} onChange={e => setFormTicket({ ...formTicket, cantidad_camiones: parseInt(e.target.value) || 1 })} />
                                     </div>
-                                    <div className="col-6">
+                                    <div className="col-12 col-sm-6">
                                         <label className="form-label fw-semibold small">Fecha Requerida *</label>
                                         <input type="date" className="form-control" required value={formTicket.fecha_requerida} onChange={e => setFormTicket({ ...formTicket, fecha_requerida: e.target.value })} />
                                     </div>
@@ -430,8 +442,8 @@ export default function Tickets() {
             {/* ============ Modal Detalle Ticket ============ */}
             {modalDetalle && (
                 <div className="modal show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,.5)' }}>
-                    <div className="modal-dialog modal-dialog-centered modal-xl">
-                        <div className="modal-content" style={{ maxHeight: '92dvh', overflowY: 'auto' }}>
+                    <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+                        <div className="modal-content" style={{ maxHeight: '92dvh' }}>
                             {loadingDetalle ? <div className="modal-body"><p>Cargando...</p></div> : ticketDetalle && (
                                 <>
                                     <div className="modal-header">
@@ -643,11 +655,11 @@ export default function Tickets() {
                                                         {filtroTipoAsignar && <th className="text-center">Tipo</th>}
                                                         <th className="text-center">Veh.</th>
                                                         <th className="text-center">WA</th>
-                                                        <th className="text-center" style={{ width: 65 }}>Cant.</th>
-                                                        <th className="text-center" style={{ width: 100 }}>Precio $</th>
-                                                        <th className="text-center" style={{ width: 135 }}>Comisión</th>
-                                                        <th className="text-center" style={{ width: 95 }}>Neto</th>
-                                                        <th className="text-center" style={{ width: 130 }}>Pagador flete</th>
+                                                        <th className="text-center" style={{ minWidth: 55 }}>Cant.</th>
+                                                        <th className="text-center" style={{ minWidth: 85 }}>Precio $</th>
+                                                        <th className="text-center" style={{ minWidth: 110 }}>Comisión</th>
+                                                        <th className="text-center" style={{ minWidth: 80 }}>Neto</th>
+                                                        <th className="text-center" style={{ minWidth: 110 }}>Pagador flete</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -679,7 +691,7 @@ export default function Tickets() {
                                                             <td className="text-center">
                                                                 <input type="number" min="0" max={maxAsignar}
                                                                     className="form-control form-control-sm text-center p-1"
-                                                                    style={{ width: 55 }}
+                                                                    style={{ width: '100%', minWidth: 50 }}
                                                                     value={asignacionesForm[t.id]?.cantidad || ''}
                                                                     onChange={e => setAsignacionesForm({ ...asignacionesForm, [t.id]: { ...(asignacionesForm[t.id] || {}), cantidad: parseInt(e.target.value) || 0 } })}
                                                                     placeholder="0"
@@ -688,7 +700,7 @@ export default function Tickets() {
                                                             <td className="text-center">
                                                                 <input type="number" min="0" step="0.01"
                                                                     className="form-control form-control-sm text-end p-1"
-                                                                    style={{ width: 90 }}
+                                                                    style={{ width: '100%', minWidth: 75 }}
                                                                     value={asignacionesForm[t.id]?.precio || ''}
                                                                     onChange={e => {
                                                                         const precio = e.target.value;
@@ -717,7 +729,7 @@ export default function Tickets() {
                                                                     </button>
                                                                     <input type="number" min="0" step="0.01"
                                                                         className="form-control form-control-sm text-end p-1"
-                                                                        style={{ width: 72 }}
+                                                                        style={{ width: '100%', minWidth: 60, flex: 1 }}
                                                                         value={(comisionModo[t.id] || 'pct') === 'pct' ? (asignacionesForm[t.id]?.comision_porcentaje || '') : (asignacionesForm[t.id]?.comision || '')}
                                                                         onChange={e => {
                                                                             const val = e.target.value;
@@ -757,7 +769,7 @@ export default function Tickets() {
                                                             <td className="text-center">
                                                                 <input type="text"
                                                                     className="form-control form-control-sm p-1"
-                                                                    style={{ width: 120, fontSize: 12 }}
+                                                                    style={{ width: '100%', minWidth: 90, fontSize: 12 }}
                                                                     value={asignacionesForm[t.id]?.pagador_flete || ''}
                                                                     onChange={e => setAsignacionesForm({ ...asignacionesForm, [t.id]: { ...(asignacionesForm[t.id] || {}), pagador_flete: e.target.value } })}
                                                                     placeholder="Quién paga..."

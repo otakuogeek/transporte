@@ -25,15 +25,16 @@ Analiza el mensaje del usuario y extrae la siguiente información en formato JSO
   "documento": "string o null",  // Número de documento/cédula/RUC del cliente
   "origen": "string o null",      // Ciudad o lugar de origen
   "destino": "string o null",     // Ciudad o lugar de destino
-  "fecha_carga": "YYYY-MM-DD o null", // Fecha de carga (si dice "mañana", "lunes", etc., calcula la fecha)
+  "fecha_carga": "DD/MM/YYYY o null", // Fecha de carga (si dice "mañana", "lunes", etc., calcula la fecha exacta en formato DD/MM/YYYY)
   "tipo_vehiculo": "string o null",   // Tipo de vehículo (Furgón, Tractomula, Camión 350, Camioneta, etc.)
+  "cantidad_camiones": "numero o null", // Cantidad de camiones solicitados
   "datos_faltantes": ["lista de datos que no proporcionó"] // Lista de campos que faltan para completar la solicitud
 }
 
-Si el mensaje NO es una solicitud de transporte (ej: saludo, pregunta general), devuelve:
+Si el mensaje NO es una solicitud de transporte (ej: saludo, pregunta general, "qué día es hoy", dudas), devuelve:
 { "es_solicitud": false, "datos_faltantes": [] }
 
-Hoy es ${new Date().toISOString().split('T')[0]}.
+Hoy es ${new Date().toLocaleDateString('es-CO')}.
 IMPORTANTE: Responde SOLO con el JSON, sin markdown ni explicaciones.`,
           },
           {

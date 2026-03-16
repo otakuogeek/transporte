@@ -82,10 +82,11 @@ export default function Layout({ children }) {
     const handler = (e) => {
       const userAgent = navigator.userAgent.toLowerCase();
       const isAndroid = /android/.test(userAgent);
+      if (!isAndroid) return;
       e.preventDefault();
       setDeferredPrompt(e);
       setInstallPlatform('android');
-      if (isAndroid) setShowInstall(true);
+      setShowInstall(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
